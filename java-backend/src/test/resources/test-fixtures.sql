@@ -1,6 +1,10 @@
 -- Deterministic fixture for integration tests. Re-created before every test.
 -- Fixed ids keep assertions readable; FK order matters.
 SET FOREIGN_KEY_CHECKS = 0;
+TRUNCATE TABLE student_answers;
+TRUNCATE TABLE quiz_attempts;
+TRUNCATE TABLE question_options;
+TRUNCATE TABLE questions;
 TRUNCATE TABLE ai_generations;
 TRUNCATE TABLE quizzes;
 TRUNCATE TABLE lesson_documents;

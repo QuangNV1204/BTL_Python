@@ -181,6 +181,27 @@ class QuizServiceTest {
     }
 
     @Test
+    void studentWithInProgressAttemptCanReadClosedQuizWithoutAnswerLeakage() {
+        actor(8L, UserRole.STUDENT);
+        lesson();
+        detail(QuizStatus.CLOSED);
+        when(context.hasInProgressAttempt(30L, 8L)).thenReturn(true);
+        when(context.isEnrolled(20L, 8L)).thenReturn(true);
+        var question = Question.builder().id(50L).quizId(30L).content("Question")
+            .explanation("Secret explanation").generatedByAi(false).orderIndex(0).build();
+        var option = QuestionOption.builder().id(60L).questionId(50L).content("Option")
+            .isCorrect(true).orderIndex(0).build();
+        when(questions.findByQuizIdOrderByOrderIndexAsc(30L)).thenReturn(List.of(question));
+        when(options.findByQuestionIdIn(List.of(50L))).thenReturn(List.of(option));
+
+        Object result = service.get(30L);
+
+        assertThat(result).isInstanceOf(QuizStudentResponse.class);
+        String body = JsonMapper.builder().build().writeValueAsString(result);
+        assertThat(body).doesNotContain("is_correct", "explanation", "correct_option_id");
+    }
+
+    @Test
     void publishedQuizRequiresEnrollment() {
         actor(8L, UserRole.STUDENT);
         lesson();

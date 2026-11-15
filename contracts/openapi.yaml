@@ -3,8 +3,9 @@ info:
   title: Learning AI Shared API
   version: 0.1.0
   description: |
-    Partial shared contract: only the nine quiz-authoring/read/publication operations.
-    Other MVP APIs, including AI generation, attempts and grading, are not specified here.
+    Partial shared contract: quiz-authoring/read/publication plus start, submit and detail
+    operations for server-authoritative quiz attempts. Other MVP APIs, including AI
+    generation, attempt history and statistics, are not specified here.
     All paths include /api/v1; deployment chooses the origin (no server URL is assumed).
     JSON uses snake_case, positive BIGINT IDs as strings and UTC timestamps ending in Z.
     Private operations require an active account and a valid, unexpired access JWT.
@@ -21,6 +22,7 @@ security:
   - bearerAuth: []
 tags:
   - name: Quizzes
+  - name: Attempts
 paths:
   /api/v1/lessons/{lesson_id}/quizzes:
     parameters:
@@ -30,8 +32,10 @@ paths:
       operationId: listLessonQuizzes
       summary: List quizzes in a lesson
       description: |
-        O sees every status; E sees only PUBLISHED summaries. A student without
-        enrollment receives 403 ENROLLMENT_REQUIRED. Empty visible results return
+        O sees every status; E sees only PUBLISHED summaries. A CLOSED quiz remains absent
+        from the list, but the owner of an existing IN_PROGRESS attempt may fetch its detail
+        directly to finish. A student without enrollment receives 403 ENROLLMENT_REQUIRED.
+        Empty visible results return
         an empty page, not 404. Order is created_at descending, then id descending.
       parameters:
         - $ref: '#/components/parameters/Page'
@@ -227,6 +231,83 @@ paths:
         '403': { $ref: '#/components/responses/Forbidden' }
         '404': { $ref: '#/components/responses/NotFound' }
         '409': { $ref: '#/components/responses/Conflict' }
+  /api/v1/quizzes/{quiz_id}/attempts:
+    parameters:
+      - $ref: '#/components/parameters/QuizId'
+    post:
+      tags: [Attempts]
+      operationId: startQuizAttempt
+      summary: Start or resume one IN_PROGRESS attempt
+      description: |
+        Enrolled STUDENT only. Quiz must be PUBLISHED for a new attempt. Repeated start
+        returns the existing IN_PROGRESS attempt with 200; a new attempt returns 201.
+        A quiz closed after start still returns its existing attempt, but creates no new one.
+      responses:
+        '200':
+          description: Existing IN_PROGRESS attempt.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Attempt' }
+        '201':
+          description: New IN_PROGRESS attempt.
+          headers:
+            Location:
+              required: true
+              schema: { type: string, format: uri-reference }
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Attempt' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409': { $ref: '#/components/responses/Conflict' }
+  /api/v1/attempts/{attempt_id}/submit:
+    parameters:
+      - $ref: '#/components/parameters/AttemptId'
+    post:
+      tags: [Attempts]
+      operationId: submitQuizAttempt
+      summary: Validate, grade and atomically persist an attempt
+      description: |
+        Attempt owner only. The server validates question/option membership, treats omitted
+        questions and explicit null options as wrong, computes score on a 0-100 scale rounded
+        HALF_UP to two decimals, and persists every answer plus result in one transaction.
+        Retry, including a different payload, returns the stored Result without rewriting it.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/AttemptSubmit' }
+      responses:
+        '200':
+          description: Stored server-authoritative Result.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/AttemptResult' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409': { $ref: '#/components/responses/Conflict' }
+  /api/v1/attempts/{attempt_id}:
+    parameters:
+      - $ref: '#/components/parameters/AttemptId'
+    get:
+      tags: [Attempts]
+      operationId: getQuizAttempt
+      summary: Get the owner's attempt or submitted result
+      responses:
+        '200':
+          description: Attempt before submit; Result with review after submit.
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - { $ref: '#/components/schemas/Attempt' }
+                  - { $ref: '#/components/schemas/AttemptResult' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '404': { $ref: '#/components/responses/NotFound' }
   /api/v1/quizzes/{quiz_id}/publication:
     parameters:
       - $ref: '#/components/parameters/QuizId'
@@ -277,6 +358,11 @@ components:
       schema: { $ref: '#/components/schemas/Id' }
     QuestionId:
       name: question_id
+      in: path
+      required: true
+      schema: { $ref: '#/components/schemas/Id' }
+    AttemptId:
+      name: attempt_id
       in: path
       required: true
       schema: { $ref: '#/components/schemas/Id' }
@@ -503,7 +589,10 @@ components:
         id: { $ref: '#/components/schemas/Id' }
         lesson_id: { $ref: '#/components/schemas/Id' }
         title: { $ref: '#/components/schemas/Title' }
-        status: { type: string, const: PUBLISHED }
+        status:
+          type: string
+          enum: [PUBLISHED, CLOSED]
+          description: CLOSED is returned only to the enrolled owner of an existing IN_PROGRESS attempt.
         questions:
           type: array
           minItems: 1
@@ -518,6 +607,82 @@ components:
         title: { $ref: '#/components/schemas/Title' }
         status: { $ref: '#/components/schemas/QuizStatus' }
         question_count: { type: integer, minimum: 0 }
+    AttemptStatus:
+      type: string
+      enum: [IN_PROGRESS, SUBMITTED]
+    Attempt:
+      type: object
+      additionalProperties: false
+      required: [id, quiz_id, student_id, status, total_questions, started_at]
+      properties:
+        id: { $ref: '#/components/schemas/Id' }
+        quiz_id: { $ref: '#/components/schemas/Id' }
+        student_id: { $ref: '#/components/schemas/Id' }
+        status: { type: string, const: IN_PROGRESS }
+        total_questions: { type: integer, minimum: 1 }
+        started_at: { $ref: '#/components/schemas/UtcTimestamp' }
+    AttemptAnswerWrite:
+      type: object
+      additionalProperties: false
+      required: [question_id, selected_option_id]
+      properties:
+        question_id: { $ref: '#/components/schemas/Id' }
+        selected_option_id:
+          oneOf:
+            - { $ref: '#/components/schemas/Id' }
+            - { type: 'null' }
+    AttemptSubmit:
+      type: object
+      additionalProperties: false
+      required: [answers]
+      properties:
+        answers:
+          type: array
+          items: { $ref: '#/components/schemas/AttemptAnswerWrite' }
+    AttemptReviewOption:
+      type: object
+      additionalProperties: false
+      required: [id, content]
+      properties:
+        id: { $ref: '#/components/schemas/Id' }
+        content: { $ref: '#/components/schemas/OptionContent' }
+    AttemptReview:
+      type: object
+      additionalProperties: false
+      required: [question_id, question_content, selected_option_id, is_correct, correct_option_id, explanation, options]
+      properties:
+        question_id: { $ref: '#/components/schemas/Id' }
+        question_content: { $ref: '#/components/schemas/QuestionContent' }
+        selected_option_id:
+          oneOf:
+            - { $ref: '#/components/schemas/Id' }
+            - { type: 'null' }
+        is_correct: { type: boolean }
+        correct_option_id: { $ref: '#/components/schemas/Id' }
+        explanation: { $ref: '#/components/schemas/Explanation' }
+        options:
+          type: array
+          minItems: 2
+          maxItems: 6
+          items: { $ref: '#/components/schemas/AttemptReviewOption' }
+    AttemptResult:
+      type: object
+      additionalProperties: false
+      required: [id, quiz_id, quiz_title, student_id, status, score, total_questions, correct_count, started_at, submitted_at, review]
+      properties:
+        id: { $ref: '#/components/schemas/Id' }
+        quiz_id: { $ref: '#/components/schemas/Id' }
+        quiz_title: { $ref: '#/components/schemas/Title' }
+        student_id: { $ref: '#/components/schemas/Id' }
+        status: { type: string, const: SUBMITTED }
+        score: { type: number, minimum: 0, maximum: 100, multipleOf: 0.01 }
+        total_questions: { type: integer, minimum: 1 }
+        correct_count: { type: integer, minimum: 0 }
+        started_at: { $ref: '#/components/schemas/UtcTimestamp' }
+        submitted_at: { $ref: '#/components/schemas/UtcTimestamp' }
+        review:
+          type: array
+          items: { $ref: '#/components/schemas/AttemptReview' }
     QuizPage:
       type: object
       additionalProperties: false

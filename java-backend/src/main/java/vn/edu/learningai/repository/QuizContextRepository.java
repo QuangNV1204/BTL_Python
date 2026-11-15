@@ -43,6 +43,16 @@ public class QuizContextRepository {
             .optional();
     }
 
+    public boolean hasInProgressAttempt(Long quizId, Long studentId) {
+        return jdbc.sql("""
+            SELECT EXISTS(SELECT 1 FROM quiz_attempts
+                WHERE quiz_id = :quiz_id AND student_id = :student_id AND status = 'IN_PROGRESS')
+            """)
+            .param("quiz_id", quizId)
+            .param("student_id", studentId)
+            .query(Boolean.class).single();
+    }
+
     public boolean hasLearningHistory(Long quizId) {
         return jdbc.sql("""
             SELECT EXISTS(SELECT 1 FROM quiz_attempts WHERE quiz_id = :quiz_id)

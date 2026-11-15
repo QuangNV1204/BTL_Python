@@ -178,7 +178,7 @@ export function AttemptResultPage() {
                 <Space orientation="vertical" size={8} style={{ width: '100%' }}>
                   {review.options.map((opt, oIndex) => {
                     const isSelected = opt.id === review.selectedOptionId
-                    const isAnswerCorrect = opt.isCorrect
+                    const isAnswerCorrect = opt.id === review.correctOptionId
 
                     let bg = '#fafafa'
                     let border = '#f0f0f0'

@@ -14,31 +14,35 @@ export interface AttemptSummaryItem {
   submittedAt?: IsoDateTime | null
 }
 
+export interface AttemptStart {
+  id: Id
+  quizId: Id
+  studentId: Id
+  status: 'IN_PROGRESS'
+  totalQuestions: number
+  startedAt: IsoDateTime
+}
+
 export interface AttemptAnswerReview {
   questionId: Id
   questionContent: string
   selectedOptionId?: Id | null
   isCorrect: boolean
-  options: {
-    id: Id
-    content: string
-    isCorrect?: boolean
-  }[]
-  explanation?: string
+  correctOptionId: Id
+  options: { id: Id; content: string }[]
+  explanation?: string | null
 }
 
 export interface AttemptDetail {
   id: Id
   quizId: Id
   quizTitle: string
-  courseId?: Id
-  lessonId?: Id
-  studentId?: Id
-  status: AttemptStatus
-  score?: number | null
+  studentId: Id
+  status: 'SUBMITTED'
+  score: number
   totalQuestions: number
   correctCount: number
   startedAt: IsoDateTime
-  submittedAt?: IsoDateTime | null
+  submittedAt: IsoDateTime
   reviews: AttemptAnswerReview[]
 }
