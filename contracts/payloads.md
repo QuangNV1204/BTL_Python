@@ -5,11 +5,18 @@ Field dưới đây là thiết kế; khi viết OpenAPI phải khai báo requir
 | Group | Request | Response chính |
 |---|---|---|
 | Register | full_name, email, password | User: id, full_name, email, role, is_active, created_at |
+| VerifyEmail | token bắt buộc, 43 ký tự Base64 URL-safe | 204; không body/token đăng nhập |
+| ResendVerificationEmail | email bắt buộc, đúng định dạng, tối đa 254 ký tự | 204; cùng phản hồi cho email không tồn tại, đã xác minh hoặc tài khoản bị khóa |
+| ForgotPassword | email bắt buộc, đúng định dạng, tối đa 254 ký tự; không gửi Authorization | 204, không body/token; cùng phản hồi cho email không tồn tại, bị khóa hoặc chưa xác minh; tài khoản active đã xác minh được gửi link |
+| ResetPassword | token bắt buộc, 43 ký tự Base64 URL-safe; new_password bắt buộc, 10–72 ký tự và khác mật khẩu hiện tại; không gửi Authorization | 204, không body/token đăng nhập; vô hiệu hóa mọi link đặt lại mật khẩu, thu hồi tất cả refresh session của tài khoản và Set-Cookie xóa refreshToken |
 | Login | email, password | AuthResponse: access_token; Set-Cookie: refreshToken |
 | Refresh | Cookie: refreshToken; không body; không gửi header Authorization | AuthResponse: access_token; Set-Cookie: refreshToken mới |
 | Logout | Cookie: refreshToken nếu có; không body; không gửi header Authorization | 204, không body; Set-Cookie xóa refreshToken |
+| ChangePassword | Bearer access token; current_password bắt buộc, tối đa 72 ký tự; new_password bắt buộc, 10–72 ký tự và khác mật khẩu hiện tại | 204, không body; giữ nguyên access token, refresh session và cookie |
+| LogoutAll | Bearer access token; không body | 204, không body; thu hồi tất cả refresh session của người đang đăng nhập; Set-Cookie xóa refreshToken |
 | Profile | full_name bắt buộc, không null/rỗng/chỉ có khoảng trắng, dài 1–120 ký tự; body thiếu full_name trả 400 VALIDATION_ERROR | User (200); chỉ cập nhật full_name, không đổi email/password/role/is_active |
 | UserStatus | is_active | User |
+| UserSearch | Query email tùy chọn, tối đa 254 ký tự sau trim; page/page_size/sort | Page<User>; chỉ ADMIN, tìm email chứa chuỗi không phân biệt hoa/thường; email thiếu/rỗng/chỉ khoảng trắng trả danh sách không lọc |
 | TeacherRequest/Decision | reason bắt buộc, không null/rỗng/chỉ có khoảng trắng, tối đa 4000 ký tự / status bắt buộc APPROVED hoặc REJECTED, decision_note nullable tối đa 4000 ký tự | id, user_id, reason, status, decided_by nullable, decision_note nullable, decided_at nullable, created_at; các ID là string, timestamp UTC |
 | CategoryWrite | POST: name bắt buộc, description nullable; PATCH: chỉ cập nhật name/description khác null, field thiếu hoặc null giữ nguyên; description rỗng được lưu là chuỗi rỗng | id, name, description |
 | CourseWrite | title, description, category_id, price | CourseOwner: id, fields trên, thumbnail_url nullable, is_published, archived_at nullable, teacher_id, created_at, updated_at |
@@ -34,7 +41,13 @@ Field dưới đây là thiết kế; khi viết OpenAPI phải khai báo requir
 | QuizStatistics | Không ghi | quiz_id, submitted_attempts, unique_students, average_score nullable, best_scores[{student_id,score}], hardest_questions[{question_id,wrong_count}], generated_at |
 | SystemStatistics | Không ghi | active_users, teachers, published_courses, enrollments, submitted_attempts, generated_at |
 
+EmailVerificationToken lưu hash SHA-256 của token ngẫu nhiên 32 byte, hạn 24 giờ và used_at. Token sai/hết hạn/đã dùng trả 400 INVALID_EMAIL_VERIFICATION_TOKEN; payload sai trả 400 VALIDATION_ERROR. Verify thành công ghi email_verified_at và used_at trong cùng transaction, giữ nguyên is_active. Gửi lại không vô hiệu hóa link cũ chưa hết hạn/chưa dùng. Login đúng mật khẩu nhưng email chưa xác minh trả 403 EMAIL_NOT_VERIFIED và không cấp token; refresh cũng từ chối user chưa xác minh. Lỗi gửi SMTP trả 503 EMAIL_SEND_FAILED; đăng ký/gửi lại rollback dữ liệu của thao tác khi gửi thất bại.
+
+PasswordResetToken lưu SHA-256 của token ngẫu nhiên 32 byte, hạn 30 phút và used_at. ForgotPassword chuẩn hóa email bằng trim/lowercase, không đổi mật khẩu hoặc thu hồi phiên; gửi link mới thành công vô hiệu hóa các link đặt lại mật khẩu cũ. SMTP lỗi trả 503 EMAIL_SEND_FAILED và rollback token mới cùng việc vô hiệu hóa link cũ. ResetPassword lấy user từ token, không nhận user_id/email/current_password; token sai/hết hạn/đã dùng trả 400 INVALID_PASSWORD_RESET_TOKEN. Mật khẩu không trim hoặc normalize; trùng mật khẩu hiện tại trả 400 VALIDATION_ERROR theo field new_password. Thành công lưu hash BCrypt mới, vô hiệu hóa mọi token đặt lại mật khẩu và thu hồi tất cả refresh session của đúng user trong cùng transaction; không thay role/is_active/email_verified_at và không tự đăng nhập. Access token cũ còn hiệu lực đến exp nếu user active.
+
 Email register/login được chuẩn hóa trong service bằng `trim().toLowerCase(Locale.ROOT)` trước khi lưu hoặc xác thực; ví dụ `"User@Example.com"` trở thành `"user@example.com"`. DTO được validation trước khi gọi service: null/rỗng bị `@NotBlank` từ chối; register có thêm `@Email`, nên email có khoảng trắng đầu/cuối có thể bị trả 400 trước khi service kịp trim. DTO không tự thay đổi email; password luôn được giữ nguyên.
+
+ChangePassword không trim hoặc normalize mật khẩu; sai current_password hoặc new_password trùng mật khẩu hiện tại trả 400 VALIDATION_ERROR với field tương ứng. Không trả password/hash trong response. UserSearch trim và chuyển email về chữ thường; các ký tự %, _ và ! được tìm như ký tự thường. Email tìm kiếm vượt 254 ký tự trả 400 VALIDATION_ERROR với field email; không tìm thấy trả Page<User> rỗng.
 
 TeacherRequest mới có status=PENDING, decided_by/decision_note/decided_at=null; user_id lấy từ người đang đăng nhập. Hai danh sách TeacherRequest nhận page/page_size/sort; sort whitelist id, status, created_at, decided_at, mặc định created_at desc rồi id desc. Thiếu hoặc sai reason/status, hoặc decision_note vượt giới hạn trả 400 VALIDATION_ERROR; status=PENDING không hợp lệ khi quyết định. Chỉ yêu cầu PENDING được xét duyệt; APPROVED yêu cầu user vẫn là STUDENT active và cập nhật role thành TEACHER, nếu không trả 409 INVALID_STATE. REJECTED giữ nguyên role; quyết định lưu decided_by/decision_note/decided_at. User có thể gửi yêu cầu mới sau khi bị từ chối nếu vẫn là STUDENT và chưa có PENDING.
 

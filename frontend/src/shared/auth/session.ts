@@ -7,7 +7,7 @@ import {
   setSessionExpiredHandler,
 } from '../api/client'
 import { queryClient } from '../api/queryClient'
-import type { AuthResponse, LoginRequest, User } from './types'
+import type { AuthResponse, ChangePasswordRequest, LoginRequest, ResetPasswordRequest, User } from './types'
 
 interface SessionState {
   user: User | null
@@ -76,7 +76,7 @@ export function restoreSession(): Promise<void> {
         const user = await apiGet<User>('/users/me')
         updateSession({ user, isLoading: false, error: null })
       } catch (error) {
-        if (isApiError(error) && (error.status === 401 || error.code === 'ACCOUNT_INACTIVE')) {
+        if (isApiError(error) && (error.status === 401 || error.code === 'ACCOUNT_INACTIVE' || error.code === 'EMAIL_NOT_VERIFIED')) {
           clearSession()
         } else {
           accessToken = null
@@ -116,6 +116,27 @@ export function logout(): Promise<void> {
     })
   }
   return logoutPromise
+}
+
+export function changePassword(request: ChangePasswordRequest): Promise<void> {
+  return apiPost<void>('/auth/change-password', request)
+}
+
+export async function resetPassword(request: ResetPasswordRequest): Promise<void> {
+  const pendingSession = restorePromise ?? refreshPromise
+  await pendingSession?.catch(() => undefined)
+  await apiPost<void>('/auth/reset-password', request, { auth: false })
+  const remainingSession = restorePromise ?? refreshPromise
+  await remainingSession?.catch(() => undefined)
+  clearSession()
+}
+
+export async function logoutAll(): Promise<void> {
+  const pendingSession = restorePromise ?? refreshPromise
+  await pendingSession?.catch(() => undefined)
+  await apiPost<void>('/auth/logout-all')
+  await refreshPromise?.catch(() => undefined)
+  clearSession()
 }
 
 setAccessTokenProvider(() => accessToken)
