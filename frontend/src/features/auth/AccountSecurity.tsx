@@ -59,7 +59,7 @@ export function AccountSecurity() {
     <>
       <Card title="Đổi mật khẩu">
         <div className="account-stack">
-          <p className="account-description">Đổi mật khẩu bằng cách nhập mật khẩu hiện tại và mật khẩu mới. Các phiên đăng nhập được giữ nguyên.</p>
+          <p className="account-description">Đổi mật khẩu bằng cách nhập mật khẩu hiện tại và mật khẩu mới.</p>
           {passwordMutation.error && !passwordFieldError ? (
             <Alert type="error" showIcon title="Không thể đổi mật khẩu. Vui lòng thử lại." />
           ) : null}

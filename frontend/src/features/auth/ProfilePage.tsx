@@ -28,7 +28,6 @@ export function ProfilePage() {
 
   return (
     <div className="account-page account-profile">
-      <p className="account-description">Quản lý thông tin tài khoản và theo dõi yêu cầu trở thành giảng viên.</p>
       <Card>
         <div className="account-identity">
           <Avatar name={user.full_name} size="xl" />
