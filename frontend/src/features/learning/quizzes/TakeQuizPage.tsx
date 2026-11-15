@@ -5,28 +5,15 @@ import {
   RightOutlined,
   SendOutlined,
 } from '@ant-design/icons'
-import { useQuery } from '@tanstack/react-query'
-import {
-  Alert,
-  App,
-  Button,
-  Card,
-  Col,
-  Progress,
-  Radio,
-  Row,
-  Space,
-  Tag,
-  Typography,
-} from 'antd'
+import { useMutation, useQuery } from '@tanstack/react-query'
+import { Alert, App, Button, Card, Col, Progress, Radio, Row, Space, Tag, Typography } from 'antd'
 import { useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router'
 import { EmptyState, ErrorState, LoadingState } from '../../../shared/components/PageState'
 import { usePageHeader } from '../../../shared/components/pageHeader'
 import { paths } from '../../../shared/routing/paths'
-import { saveStoredAttempt } from '../attempts/attempts.api'
-import type { AttemptDetail } from '../attempts/attempts.types'
-import { getQuiz, quizKeys } from '../../teaching/quizzes/quiz.api'
+import { getStudentQuiz, quizKeys } from '../../teaching/quizzes/quiz.api'
+import { startAttempt, submitAttempt } from '../attempts/attempts.api'
 
 export function TakeQuizPage() {
   const { quizId = '' } = useParams()
@@ -34,12 +21,19 @@ export function TakeQuizPage() {
   const { modal, message } = App.useApp()
 
   const quizQuery = useQuery({
-    queryKey: quizKeys.detail(quizId),
-    queryFn: () => getQuiz(quizId),
+    queryKey: [...quizKeys.detail(quizId), 'student'],
+    queryFn: () => getStudentQuiz(quizId),
     enabled: Boolean(quizId),
+  })
+  const attemptQuery = useQuery({
+    queryKey: ['attempts', 'active', quizId],
+    queryFn: () => startAttempt(quizId),
+    enabled: Boolean(quizId),
+    retry: false,
   })
 
   const quiz = quizQuery.data
+  const attempt = attemptQuery.data
 
   usePageHeader(
     quiz
@@ -55,37 +49,56 @@ export function TakeQuizPage() {
   )
 
   const [currentIdx, setCurrentIdx] = useState(0)
-  // Lưu đáp án học viên chọn: { [questionId]: selectedOptionId }
   const [selectedAnswers, setSelectedAnswers] = useState<Record<string, string>>({})
-  const [isSubmitting, setIsSubmitting] = useState(false)
 
-  // Cảnh báo khi người dùng rời trang lúc đang làm bài
+  const submitMutation = useMutation({
+    mutationFn: () => {
+      if (!attempt || !quiz) throw new Error('Chưa khởi tạo được lượt làm bài.')
+      return submitAttempt(
+        attempt.id,
+        quiz.questions.map((question) => ({
+          question_id: question.id,
+          selected_option_id: selectedAnswers[question.id] ?? null,
+        })),
+      )
+    },
+    onSuccess: (result) => {
+      void message.success('Nộp bài thành công!')
+      navigate(paths.attemptResult(result.id), { replace: true })
+    },
+    onError: (error: Error) => void message.error(error.message),
+  })
+
   useEffect(() => {
-    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
-      if (Object.keys(selectedAnswers).length > 0 && !isSubmitting) {
-        e.preventDefault()
-        e.returnValue = ''
+    const handleBeforeUnload = (event: BeforeUnloadEvent) => {
+      if (Object.keys(selectedAnswers).length > 0 && !submitMutation.isSuccess) {
+        event.preventDefault()
+        event.returnValue = ''
       }
     }
     window.addEventListener('beforeunload', handleBeforeUnload)
     return () => window.removeEventListener('beforeunload', handleBeforeUnload)
-  }, [selectedAnswers, isSubmitting])
+  }, [selectedAnswers, submitMutation.isSuccess])
 
-  if (quizQuery.isLoading) return <LoadingState tip="Đang tải bài thi trắc nghiệm…" />
-  if (quizQuery.isError || !quiz) {
+  if (quizQuery.isLoading || attemptQuery.isLoading) {
+    return <LoadingState tip="Đang khởi tạo lượt làm bài…" />
+  }
+  if (quizQuery.isError) {
     return <ErrorState error={quizQuery.error} onRetry={() => void quizQuery.refetch()} />
   }
+  if (attemptQuery.isError) {
+    return <ErrorState error={attemptQuery.error} onRetry={() => void attemptQuery.refetch()} />
+  }
+  if (!quiz || !attempt) {
+    return <ErrorState error={new Error('Không thể khởi tạo lượt làm bài.')} />
+  }
 
-  const questions = quiz.questions ?? []
+  const questions = quiz.questions
   if (questions.length === 0) {
     return (
       <EmptyState
         description="Bài quiz này chưa có câu hỏi nào."
-        action={
-          <Button type="primary" onClick={() => navigate(-1)}>
-            Quay lại
-          </Button>
-        }
+        action={<Button type="primary" onClick={() => navigate(-1)}>Quay lại</Button>}
       />
     )
   }
@@ -94,27 +107,17 @@ export function TakeQuizPage() {
   const answeredCount = Object.keys(selectedAnswers).length
   const progressPercent = Math.round((answeredCount / questions.length) * 100)
 
-  const handleSelectOption = (optionId: string) => {
-    if (!currentQuestion.id) return
-    setSelectedAnswers((prev) => ({
-      ...prev,
-      [currentQuestion.id!]: optionId,
-    }))
-  }
-
   const handleConfirmSubmit = () => {
     const unAnsweredIndices = questions
-      .map((q, idx) => (!q.id || !selectedAnswers[q.id] ? idx + 1 : null))
-      .filter((n): n is number => n !== null)
+      .map((question, index) => (!selectedAnswers[question.id] ? index + 1 : null))
+      .filter((number): number is number => number !== null)
 
     modal.confirm({
       title: 'Nộp bài thi?',
       icon: <ExclamationCircleOutlined />,
       content: (
         <div>
-          <p>
-            Bạn đã trả lời <strong>{answeredCount}</strong> / <strong>{questions.length}</strong> câu hỏi.
-          </p>
+          <p>Bạn đã trả lời <strong>{answeredCount}</strong> / <strong>{questions.length}</strong> câu hỏi.</p>
           {unAnsweredIndices.length > 0 ? (
             <Alert
               type="warning"
@@ -124,76 +127,24 @@ export function TakeQuizPage() {
           ) : (
             <Alert type="success" showIcon message="Bạn đã hoàn thành tất cả các câu hỏi!" />
           )}
-          <p style={{ marginTop: 12 }}>Bạn có chắc chắn muốn nộp bài để chấm điểm?</p>
+          <p style={{ marginTop: 12 }}>Bạn có chắc chắn muốn nộp bài để hệ thống chấm điểm?</p>
         </div>
       ),
       okText: 'Nộp bài ngay',
       cancelText: 'Làm tiếp',
-      onOk: () => doSubmit(),
+      okButtonProps: { loading: submitMutation.isPending },
+      onOk: () => submitMutation.mutateAsync(),
     })
-  }
-
-  const doSubmit = () => {
-    setIsSubmitting(true)
-    const attemptId = Date.now().toString()
-
-    // Đánh giá kết quả bài thi
-    let correctCount = 0
-    const reviews = questions.map((q) => {
-      const selectedOptId = q.id ? selectedAnswers[q.id] : undefined
-      // Kiểm tra đáp án đúng nếu có dữ liệu tác giả hoặc đánh giá mẫu
-      const correctOpt = q.options.find((o) => o.isCorrect)
-      const isCorrect = correctOpt ? correctOpt.id === selectedOptId : Boolean(selectedOptId)
-      if (isCorrect) correctCount++
-
-      return {
-        questionId: q.id || '',
-        questionContent: q.content,
-        selectedOptionId: selectedOptId,
-        isCorrect,
-        options: q.options.map((o) => ({
-          id: o.id || '',
-          content: o.content,
-          isCorrect: o.isCorrect,
-        })),
-        explanation: q.explanation,
-      }
-    })
-
-    const score = Math.round((correctCount / questions.length) * 100)
-
-    const attempt: AttemptDetail = {
-      id: attemptId,
-      quizId: quiz.id,
-      quizTitle: quiz.title,
-      lessonId: quiz.lessonId,
-      status: 'SUBMITTED',
-      score,
-      totalQuestions: questions.length,
-      correctCount,
-      startedAt: new Date(Date.now() - 300000).toISOString(),
-      submittedAt: new Date().toISOString(),
-      reviews,
-    }
-
-    saveStoredAttempt(attempt)
-    void message.success('Nộp bài thành công!')
-    navigate(paths.attemptResult(attemptId), { replace: true })
   }
 
   return (
     <Row gutter={[24, 24]}>
-      {/* Cột chính: Nội dung câu hỏi và chọn đáp án */}
       <Col xs={24} lg={17}>
         <Space orientation="vertical" size={16} style={{ width: '100%' }}>
           <Card>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
-              <span style={{ fontWeight: 600 }}>
-                Tiến độ: {answeredCount} / {questions.length} câu
-              </span>
-              <Tag color={progressPercent === 100 ? 'success' : 'processing'}>
-                {progressPercent}% hoàn thành
-              </Tag>
+              <span style={{ fontWeight: 600 }}>Tiến độ: {answeredCount} / {questions.length} câu</span>
+              <Tag color={progressPercent === 100 ? 'success' : 'processing'}>{progressPercent}% hoàn thành</Tag>
             </div>
             <Progress percent={progressPercent} showInfo={false} />
           </Card>
@@ -201,13 +152,9 @@ export function TakeQuizPage() {
           <Card
             title={
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <span style={{ fontSize: 18, fontWeight: 700 }}>
-                  Câu {currentIdx + 1} / {questions.length}
-                </span>
-                {currentQuestion.id && selectedAnswers[currentQuestion.id] && (
-                  <Tag color="success" icon={<CheckCircleOutlined />}>
-                    Đã chọn đáp án
-                  </Tag>
+                <span style={{ fontSize: 18, fontWeight: 700 }}>Câu {currentIdx + 1} / {questions.length}</span>
+                {selectedAnswers[currentQuestion.id] && (
+                  <Tag color="success" icon={<CheckCircleOutlined />}>Đã chọn đáp án</Tag>
                 )}
               </div>
             }
@@ -218,32 +165,36 @@ export function TakeQuizPage() {
 
             <Radio.Group
               style={{ width: '100%' }}
-              value={currentQuestion.id ? selectedAnswers[currentQuestion.id] : undefined}
-              onChange={(e) => handleSelectOption(e.target.value)}
+              value={selectedAnswers[currentQuestion.id]}
+              onChange={(event) => setSelectedAnswers((previous) => ({
+                ...previous,
+                [currentQuestion.id]: event.target.value,
+              }))}
             >
               <Space orientation="vertical" size={12} style={{ width: '100%' }}>
-                {currentQuestion.options.map((opt, oIndex) => {
-                  const isSelected =
-                    currentQuestion.id && selectedAnswers[currentQuestion.id] === opt.id
+                {currentQuestion.options.map((option, optionIndex) => {
+                  const selected = selectedAnswers[currentQuestion.id] === option.id
                   return (
                     <div
-                      key={opt.id || oIndex}
-                      onClick={() => opt.id && handleSelectOption(opt.id)}
+                      key={option.id}
+                      onClick={() => setSelectedAnswers((previous) => ({
+                        ...previous,
+                        [currentQuestion.id]: option.id,
+                      }))}
                       style={{
                         padding: '14px 16px',
                         borderRadius: 8,
-                        border: `1.5px solid ${isSelected ? '#1677ff' : '#d9d9d9'}`,
-                        background: isSelected ? '#e6f4ff' : '#fff',
+                        border: `1.5px solid ${selected ? '#1677ff' : '#d9d9d9'}`,
+                        background: selected ? '#e6f4ff' : '#fff',
                         cursor: 'pointer',
                         display: 'flex',
                         alignItems: 'center',
                         gap: 12,
-                        transition: 'all 0.2s',
                       }}
                     >
-                      <Radio value={opt.id} />
-                      <span style={{ fontSize: 15, flex: 1, fontWeight: isSelected ? 600 : 400 }}>
-                        {String.fromCharCode(65 + oIndex)}. {opt.content}
+                      <Radio value={option.id} />
+                      <span style={{ fontSize: 15, flex: 1, fontWeight: selected ? 600 : 400 }}>
+                        {String.fromCharCode(65 + optionIndex)}. {option.content}
                       </span>
                     </div>
                   )
@@ -251,35 +202,14 @@ export function TakeQuizPage() {
               </Space>
             </Radio.Group>
 
-            <div
-              style={{
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'center',
-                marginTop: 32,
-                paddingTop: 16,
-                borderTop: '1px solid #f0f0f0',
-              }}
-            >
-              <Button
-                icon={<LeftOutlined />}
-                disabled={currentIdx === 0}
-                onClick={() => setCurrentIdx((i) => Math.max(0, i - 1))}
-              >
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 32, paddingTop: 16, borderTop: '1px solid #f0f0f0' }}>
+              <Button icon={<LeftOutlined />} disabled={currentIdx === 0} onClick={() => setCurrentIdx((index) => Math.max(0, index - 1))}>
                 Câu trước
               </Button>
-              <Button
-                type="primary"
-                icon={<SendOutlined />}
-                onClick={handleConfirmSubmit}
-              >
+              <Button type="primary" icon={<SendOutlined />} loading={submitMutation.isPending} onClick={handleConfirmSubmit}>
                 Nộp bài
               </Button>
-              <Button
-                icon={<RightOutlined />}
-                disabled={currentIdx === questions.length - 1}
-                onClick={() => setCurrentIdx((i) => Math.min(questions.length - 1, i + 1))}
-              >
+              <Button icon={<RightOutlined />} disabled={currentIdx === questions.length - 1} onClick={() => setCurrentIdx((index) => Math.min(questions.length - 1, index + 1))}>
                 Câu sau
               </Button>
             </div>
@@ -287,75 +217,37 @@ export function TakeQuizPage() {
         </Space>
       </Col>
 
-      {/* Cột phải: Bảng số câu hỏi */}
       <Col xs={24} lg={7}>
-        <Space orientation="vertical" size={16} style={{ width: '100%', position: 'sticky', top: 20 }}>
-          <Card title="Danh sách câu hỏi">
-            <Row gutter={[8, 8]}>
-              {questions.map((q, idx) => {
-                const isAnswered = Boolean(q.id && selectedAnswers[q.id])
-                const isCurrent = idx === currentIdx
-
-                let btnType: 'primary' | 'default' = 'default'
-                let border = '#d9d9d9'
-                let background = '#fff'
-                let color = 'inherit'
-
-                if (isCurrent) {
-                  border = '#1677ff'
-                }
-                if (isAnswered) {
-                  btnType = 'primary'
-                  background = isCurrent ? '#1677ff' : '#52c41a'
-                  border = background
-                  color = '#fff'
-                }
-
-                return (
-                  <Col span={4.8} key={q.id || idx}>
-                    <Button
-                      type={btnType}
-                      onClick={() => setCurrentIdx(idx)}
-                      style={{
-                        width: '100%',
-                        padding: 0,
-                        height: 38,
-                        fontWeight: isCurrent ? 700 : 500,
-                        border: `2px solid ${border}`,
-                        background,
-                        color,
-                      }}
-                    >
-                      {idx + 1}
-                    </Button>
-                  </Col>
-                )
-              })}
-            </Row>
-
-            <div style={{ marginTop: 20, fontSize: 13, color: 'rgba(0,0,0,0.45)' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
-                <span style={{ width: 12, height: 12, borderRadius: 2, background: '#52c41a' }} />
-                <span>Đã trả lời ({answeredCount})</span>
-              </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                <span style={{ width: 12, height: 12, borderRadius: 2, border: '1px solid #d9d9d9', background: '#fff' }} />
-                <span>Chưa trả lời ({questions.length - answeredCount})</span>
-              </div>
-            </div>
-
-            <Button
-              type="primary"
-              size="large"
-              icon={<SendOutlined />}
-              block
-              style={{ marginTop: 20 }}
-              onClick={handleConfirmSubmit}
-            >
-              Nộp bài
-            </Button>
-          </Card>
-        </Space>
+        <Card title="Danh sách câu hỏi" style={{ position: 'sticky', top: 20 }}>
+          <Row gutter={[8, 8]}>
+            {questions.map((question, index) => {
+              const answered = Boolean(selectedAnswers[question.id])
+              const current = index === currentIdx
+              return (
+                <Col span={4} key={question.id}>
+                  <Button
+                    type={answered ? 'primary' : 'default'}
+                    onClick={() => setCurrentIdx(index)}
+                    style={{
+                      width: '100%',
+                      padding: 0,
+                      height: 38,
+                      fontWeight: current ? 700 : 500,
+                      border: `2px solid ${current ? '#1677ff' : answered ? '#52c41a' : '#d9d9d9'}`,
+                      background: answered ? '#52c41a' : '#fff',
+                      color: answered ? '#fff' : 'inherit',
+                    }}
+                  >
+                    {index + 1}
+                  </Button>
+                </Col>
+              )
+            })}
+          </Row>
+          <Button type="primary" size="large" icon={<SendOutlined />} block style={{ marginTop: 20 }} loading={submitMutation.isPending} onClick={handleConfirmSubmit}>
+            Nộp bài
+          </Button>
+        </Card>
       </Col>
     </Row>
   )

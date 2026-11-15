@@ -7,6 +7,7 @@ import type {
   QuizOptionAuthor,
   QuizQuestionAuthor,
   QuizStatus,
+  QuizStudentDetail,
   QuizSummaryItem,
   QuizUpdateRequest,
 } from './quiz.types'
@@ -42,6 +43,19 @@ interface QuizAuthorWire {
   status: QuizStatus
   created_at: IsoDateTime
   questions: QuestionAuthorWire[]
+}
+
+interface QuizStudentWire {
+  id: string | number
+  lesson_id: string | number
+  title: string
+  status: 'PUBLISHED' | 'CLOSED'
+  questions: {
+    id: string | number
+    content: string
+    order_index: number
+    options: { id: string | number; content: string; order_index: number }[]
+  }[]
 }
 
 const mapOption = (opt: OptionAuthorWire): QuizOptionAuthor => ({
@@ -96,6 +110,26 @@ export async function getLessonQuizzes(lessonId: Id, page = 1, pageSize = 100): 
 export async function getQuiz(quizId: Id): Promise<QuizAuthorDetail> {
   const wire = await apiGet<QuizAuthorWire>(`/quizzes/${quizId}`)
   return mapQuizAuthor(wire)
+}
+
+export async function getStudentQuiz(quizId: Id): Promise<QuizStudentDetail> {
+  const wire = await apiGet<QuizStudentWire>(`/quizzes/${quizId}`)
+  return {
+    id: String(wire.id),
+    lessonId: String(wire.lesson_id),
+    title: wire.title,
+    status: wire.status,
+    questions: wire.questions.map((question) => ({
+      id: String(question.id),
+      content: question.content,
+      orderIndex: question.order_index,
+      options: question.options.map((option) => ({
+        id: String(option.id),
+        content: option.content,
+        orderIndex: option.order_index,
+      })),
+    })),
+  }
 }
 
 export async function createQuiz(lessonId: Id, data: QuizCreateRequest): Promise<QuizAuthorDetail> {

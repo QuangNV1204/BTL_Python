@@ -35,6 +35,27 @@ export interface QuizAuthorDetail {
   questions: QuizQuestionAuthor[]
 }
 
+export interface QuizStudentOption {
+  id: Id
+  content: string
+  orderIndex: number
+}
+
+export interface QuizStudentQuestion {
+  id: Id
+  content: string
+  orderIndex: number
+  options: QuizStudentOption[]
+}
+
+export interface QuizStudentDetail {
+  id: Id
+  lessonId: Id
+  title: string
+  status: 'PUBLISHED' | 'CLOSED'
+  questions: QuizStudentQuestion[]
+}
+
 export interface QuizCreateRequest {
   title: string
   generation_id?: string

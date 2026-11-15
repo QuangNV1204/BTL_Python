@@ -91,7 +91,9 @@ public class QuizService {
         var lesson = lesson(quiz.getLessonId());
         boolean manager = isManager(user, lesson);
         if (!manager) {
-            if (user.getRole() == UserRole.STUDENT && quiz.getStatus() != QuizStatus.PUBLISHED) {
+            if (user.getRole() == UserRole.STUDENT && quiz.getStatus() != QuizStatus.PUBLISHED
+                && !(quiz.getStatus() == QuizStatus.CLOSED
+                    && contextRepository.hasInProgressAttempt(quizId, user.getId()))) {
                 throw new ApiException(ErrorCode.NOT_FOUND, "Quiz not found");
             }
             requireEnrollment(user, lesson);

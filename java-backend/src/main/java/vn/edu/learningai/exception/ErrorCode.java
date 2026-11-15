@@ -22,6 +22,7 @@ public enum ErrorCode {
     NOT_FOUND(HttpStatus.NOT_FOUND, "Resource not found"),
     INVALID_STATE(HttpStatus.CONFLICT, "Invalid state for this operation"),
     INVALID_QUIZ(HttpStatus.CONFLICT, "Quiz content is invalid for publication"),
+    INVALID_ANSWER(HttpStatus.BAD_REQUEST, "Quiz answer is invalid"),
     RESOURCE_IN_USE(HttpStatus.CONFLICT, "Resource is in use"),
 
     COURSE_NOT_FREE(HttpStatus.CONFLICT, "Only free courses can be enrolled"),
