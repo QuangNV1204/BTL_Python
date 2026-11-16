@@ -39,7 +39,6 @@ export function ProfileForm({ user }: { user: User }) {
   return (
     <Card title="Thông tin cá nhân">
       <div className="account-stack">
-        <p className="account-description">Họ tên hiển thị trên bài làm và danh sách học viên.</p>
         {mutation.error && !(isApiError(mutation.error) && mutation.error.fieldErrors().full_name) ? (
           <Alert type="error" showIcon title={mutation.error.message} />
         ) : null}

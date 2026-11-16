@@ -1,4 +1,4 @@
--- V5 is reserved by the existing auth-enhancements password reset work.
+-- V5/V6 belong to email verification and password reset; cleanup uses V7.
 -- No foreign key: cleanup must survive deletion of document/lesson metadata.
 CREATE TABLE document_cleanup_jobs (
     storage_key VARCHAR(500) NOT NULL PRIMARY KEY,

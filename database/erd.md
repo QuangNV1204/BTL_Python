@@ -1,10 +1,12 @@
 # ERD logic
 
-Tên bảng/field chính theo `data-dictionary.md`. `document_cleanup_jobs` (V6) là hàng đợi kỹ thuật độc lập, không FK: được ghi cùng transaction xóa metadata, file chỉ xóa sau commit; thất bại giữ job để retry. Sơ đồ dưới tập trung quan hệ nghiệp vụ.
+Tên bảng/field chính theo `data-dictionary.md`. `document_cleanup_jobs` (V7) là hàng đợi kỹ thuật độc lập, không FK: được ghi cùng transaction xóa metadata, file chỉ xóa sau commit; thất bại giữ job để retry. Sơ đồ dưới tập trung quan hệ nghiệp vụ.
 
 ```mermaid
 erDiagram
   users ||--o{ auth_sessions : has
+  users ||--o{ email_verification_tokens : verifies
+  users ||--o{ password_reset_tokens : resets_password
   users ||--o{ teacher_requests : requests
   users ||--o{ courses : owns
   categories ||--o{ courses : groups

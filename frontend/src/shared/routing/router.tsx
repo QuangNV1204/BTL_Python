@@ -12,6 +12,9 @@ import { MyCoursesPage } from '../../features/marketplace/MyCoursesPage'
 import { TeachingCoursesPage } from '../../features/marketplace/TeachingCoursesPage'
 import { createBrowserRouter, type Params, type RouteObject } from 'react-router'
 import { LoginPage } from '../../features/auth/LoginPage'
+import { ForgotPasswordPage } from '../../features/auth/ForgotPasswordPage'
+import { ResetPasswordPage } from '../../features/auth/ResetPasswordPage'
+import { VerifyEmailPage } from '../../features/auth/VerifyEmailPage'
 import { RegisterPage } from '../../features/auth/RegisterPage'
 import { setUnauthorizedHandler } from '../api/client'
 import { AppLayout } from '../components/AppLayout'
@@ -19,7 +22,7 @@ import { AuthLayout } from '../components/AuthLayout'
 import { LoadingState, NotFoundState } from '../components/PageState'
 import { RouteErrorPage } from '../components/RouteErrorPage'
 import { DevScreensPage } from '../dev/DevScreensPage'
-import { HomeRedirect, RequireAccess } from './guards'
+import { GuestOnly, HomeRedirect, RequireAccess } from './guards'
 import { paths } from './paths'
 import type { RouteHandle, TabItem } from './routeHandle'
 import { LessonAiPage } from '../../features/teaching/ai/LessonAiPage'
@@ -73,6 +76,14 @@ const devRoutes: RouteObject[] = import.meta.env.DEV
 export const router = createBrowserRouter([
   {
     element: <AuthLayout />,
+    children: [
+      { path: paths.verifyEmail, element: <VerifyEmailPage />, handle: { title: 'Xác minh email' } satisfies RouteHandle },
+      { path: paths.forgotPassword, element: <ForgotPasswordPage />, handle: { title: 'Quên mật khẩu' } satisfies RouteHandle },
+      { path: paths.resetPassword, element: <ResetPasswordPage />, handle: { title: 'Đặt lại mật khẩu' } satisfies RouteHandle },
+    ],
+  },
+  {
+    element: <GuestOnly />,
     errorElement: <RouteErrorPage />,
     children: [
       {

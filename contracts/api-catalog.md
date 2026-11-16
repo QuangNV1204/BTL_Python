@@ -4,13 +4,19 @@ Mọi route có prefix `/api/v1`. A=ADMIN, T=TEACHER, S=STUDENT, U=user active �
 
 | Nhóm | Method/path | Quyền | Payload / response |
 |---|---|---|---|
-| AUTH-01 | POST /auth/register | Public | Register → User (201); không yêu cầu header Location |
+| AUTH-01 | POST /auth/register | Public | Register → User (201); gửi email xác minh, chưa đăng nhập được; không yêu cầu header Location |
+| AUTH-01 | POST /auth/verify-email | Public | VerifyEmail → 204; xác minh email, không tự đăng nhập |
+| AUTH-01 | POST /auth/resend-verification | Public | ResendVerificationEmail → 204; gửi lại hướng dẫn nếu tài khoản active chưa xác minh |
+| AUTH-01 | POST /auth/forgot-password | Public; không gửi Authorization | ForgotPassword → 204; gửi link đặt lại mật khẩu nếu tài khoản active đã xác minh email; không trả token |
+| AUTH-01 | POST /auth/reset-password | Public; không gửi Authorization | ResetPassword → 204; cập nhật mật khẩu, vô hiệu hóa mọi link đặt lại mật khẩu, thu hồi tất cả refresh session của tài khoản và xóa cookie; không tự đăng nhập |
 | AUTH-01 | POST /auth/login | Public | Login → AuthResponse (200); Set-Cookie: refreshToken |
 | AUTH-01 | POST /auth/refresh | Cookie refreshToken; không gửi Authorization | Không body → AuthResponse (200); Set-Cookie: refreshToken mới |
 | AUTH-01 | POST /auth/logout | Cookie refreshToken nếu có; không gửi Authorization | Không body → 204; xóa cookie; retry 204 |
+| AUTH-01 | POST /auth/change-password | U | ChangePassword → 204; cập nhật mật khẩu, giữ nguyên access token, refresh session và cookie |
+| AUTH-01 | POST /auth/logout-all | U | Không body → 204; thu hồi tất cả refresh session của người đang đăng nhập và xóa cookie |
 | AUTH-02 | GET /users/me | U | User |
 | AUTH-02 | PATCH /users/me | U | Profile → User (200); full_name bắt buộc, không null/rỗng/chỉ có khoảng trắng, tối đa 120 ký tự; thiếu hoặc không hợp lệ trả 400; chỉ cập nhật tên |
-| AUTH-02 | GET /users | A | Page<User> |
+| AUTH-02 | GET /users | A | email tùy chọn, page/page_size/sort → Page<User>; tìm email chứa chuỗi, không phân biệt hoa/thường |
 | AUTH-02 | PATCH /users/{user_id}/status | A | UserStatus → User |
 | USER-01 | POST /teacher-requests | S | TeacherRequest → Request (201, PENDING); không yêu cầu header Location; đã có PENDING trả 409 INVALID_STATE |
 | USER-01 | GET /teacher-requests/me | U | page/page_size/sort → Page<Request>; chỉ yêu cầu của người đang đăng nhập |

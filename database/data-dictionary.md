@@ -4,7 +4,9 @@ DB MySQL 8 (InnoDB, utf8mb4). PK BIGINT AUTO_INCREMENT; wire ID string. Thời g
 
 | Bảng | Field |
 |---|---|
-| users | id PK, full_name VARCHAR(120), email VARCHAR(254) UNIQUE normalized, password_hash VARCHAR(255), role VARCHAR CHECK ADMIN/TEACHER/STUDENT, is_active BOOLEAN, created_at, updated_at |
+| users | id PK, full_name VARCHAR(120), email VARCHAR(254) UNIQUE normalized, password_hash VARCHAR(255), role VARCHAR CHECK ADMIN/TEACHER/STUDENT, is_active BOOLEAN, email_verified_at? DATETIME(6), created_at, updated_at |
+| email_verification_tokens | id PK, user_id FK users, token_hash VARCHAR(64) UNIQUE, expires_at DATETIME(6), used_at? DATETIME(6) |
+| password_reset_tokens | id PK, user_id FK users, token_hash VARCHAR(64) UNIQUE, expires_at DATETIME(6), used_at? DATETIME(6) |
 | auth_sessions | id PK, user_id FK users, refresh_token_hash VARCHAR(255) UNIQUE, expires_at, revoked_at?, created_at, updated_at |
 | teacher_requests | id PK, user_id FK users, reason TEXT, status CHECK PENDING/APPROVED/REJECTED, decided_by? FK users, decision_note? TEXT, decided_at?, created_at |
 | categories | id PK, name VARCHAR(120) UNIQUE, description? TEXT, created_at, updated_at |
@@ -12,7 +14,7 @@ DB MySQL 8 (InnoDB, utf8mb4). PK BIGINT AUTO_INCREMENT; wire ID string. Thời g
 | course_members | id PK, course_id FK courses, student_id FK users, enrolled_at; UNIQUE(course_id, student_id) |
 | lessons | id PK, course_id FK courses, title VARCHAR(200), video_url VARCHAR(2048), transcript_text? TEXT, order_index INT CHECK ≥0, created_at, updated_at |
 | lesson_documents | id PK, lesson_id FK lessons, uploaded_by FK users, original_name VARCHAR(255), storage_key VARCHAR(512) UNIQUE, media_type VARCHAR(100), size_bytes BIGINT CHECK >0, extracted_text? TEXT, content_hash VARCHAR(64), created_at |
-| document_cleanup_jobs | storage_key VARCHAR(500) PK (UUID keys do storage cấp, không tái sử dụng), created_at; không FK để tồn tại sau khi xóa metadata; V6 |
+| document_cleanup_jobs | storage_key VARCHAR(500) PK (UUID keys do storage cấp, không tái sử dụng), created_at; không FK để tồn tại sau khi xóa metadata; V7 |
 | ai_generations | id PK, lesson_id FK lessons, source_document_id? FK lesson_documents SET NULL, source_type CHECK TRANSCRIPT/DOCUMENT, generation_type CHECK QUIZ/FLASHCARD, requested_count INT CHECK 1..10, difficulty? CHECK EASY/MEDIUM/HARD, provider VARCHAR(100), model VARCHAR(100), prompt_version VARCHAR(50), source_hash VARCHAR(64), status CHECK SUCCEEDED/FAILED, candidate_json? JSON, error_code?, created_by FK users, created_at |
 | quizzes | id PK, lesson_id FK lessons, title VARCHAR(200), status CHECK DRAFT/PUBLISHED/CLOSED DEFAULT DRAFT, generation_id? FK ai_generations, created_by FK users, published_at?, closed_at?, created_at, updated_at |
 | questions | id PK, quiz_id FK quizzes, content TEXT, question_type CHECK MULTIPLE_CHOICE, explanation? TEXT, order_index INT CHECK ≥0, generated_by_ai BOOLEAN DEFAULT false, generation_id? FK ai_generations, created_at |
@@ -24,6 +26,7 @@ DB MySQL 8 (InnoDB, utf8mb4). PK BIGINT AUTO_INCREMENT; wire ID string. Thời g
 ## Ràng buộc và chỉ mục
 
 - Email lưu normalized lowercase; UNIQUE thực tế dùng cùng quy tắc register/login/import.
+- password_reset_tokens trong V5 chỉ lưu hash SHA-256 của token ngẫu nhiên, hạn 30 phút; used_at đánh dấu đã dùng hoặc bị vô hiệu hóa. Gửi link mới vô hiệu hóa các link cũ; đặt lại mật khẩu thành công vô hiệu hóa mọi token của user và thu hồi tất cả refresh session trong cùng transaction. Service khóa dòng user trước khi xử lý token; không dùng chung token với email_verification_tokens.
 - MySQL không có partial/filtered index. Ràng buộc "duy nhất khi ở trạng thái X" làm bằng generated column trả NULL ngoài trạng thái X kèm UNIQUE (UNIQUE cho phép nhiều NULL), và service vẫn kiểm tra trong transaction.
 - Một Teacher request PENDING/user được kiểm soát tại service: khóa dòng user, kiểm tra PENDING và tạo yêu cầu trong cùng transaction. ck_teacher_requests_decision trong V3 yêu cầu PENDING có decided_by/decision_note/decided_at NULL, APPROVED/REJECTED có decided_by/decided_at; ck_teacher_requests_no_self_approval cấm tự approve. Service không cho admin tự xét duyệt yêu cầu của mình.
 - auth_sessions index user_id; login đặt expires_at = thời điểm đăng nhập + 7 ngày. Refresh kiểm tra revoked_at/expires_at và user active; thành công thì thay refresh_token_hash và cập nhật expires_at = thời điểm refresh + 7 ngày trong cùng transaction. Phiên hết hạn không được gia hạn; chưa có hạn tuyệt đối. Logout thu hồi refresh session; private request kiểm tra chữ ký/hạn access JWT và user active, access token đã phát hành còn hiệu lực đến exp.
