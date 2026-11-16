@@ -46,8 +46,10 @@ public class LessonService implements LessonAccessPolicy, LessonSourceTextProvid
 
     @Transactional(readOnly = true)
     public List<LessonResponse> listForCourse(Long courseId, Long userId) {
-        assertCanViewCourse(courseId, userId);
-        return lessonRepository.findByCourseIdOrderByOrderIndexAsc(courseId).stream().map(this::toResponse).toList();
+        boolean includeTranscript = assertCanViewCourse(courseId, userId) == LessonViewAccess.MANAGER;
+        return lessonRepository.findByCourseIdOrderByOrderIndexAsc(courseId).stream()
+            .map(lesson -> toResponse(lesson, includeTranscript))
+            .toList();
     }
 
     @Transactional
@@ -61,21 +63,21 @@ public class LessonService implements LessonAccessPolicy, LessonSourceTextProvid
             .transcriptText(normalizeText(request.transcriptText()))
             .orderIndex(lessons.size() + 1)
             .build();
-        return toResponse(lessonRepository.save(lesson));
+        return toResponse(lessonRepository.save(lesson), true);
     }
 
     @Transactional(readOnly = true)
     public LessonResponse get(Long lessonId, Long userId) {
         Lesson lesson = requireLesson(lessonId);
-        assertCanViewLesson(lessonId, userId);
-        return toResponse(lesson);
+        boolean includeTranscript = assertCanViewLesson(lessonId, userId) == LessonViewAccess.MANAGER;
+        return toResponse(lesson, includeTranscript);
     }
 
     @Transactional
     public LessonResponse update(Long lessonId, LessonWriteRequest request, Long userId) {
         Lesson lesson = requireManage(lessonId, userId);
         lesson.updateContent(request.title(), request.videoUrl(), request.transcriptText());
-        return toResponse(lesson);
+        return toResponse(lesson, true);
     }
 
     @Transactional
@@ -97,7 +99,7 @@ public class LessonService implements LessonAccessPolicy, LessonSourceTextProvid
             byId.get(requestedIds.get(index)).changeOrder(index + 1);
         }
         lessonRepository.flush();
-        return requestedIds.stream().map(byId::get).map(this::toResponse).toList();
+        return requestedIds.stream().map(byId::get).map(lesson -> toResponse(lesson, true)).toList();
     }
 
     @Transactional
@@ -222,16 +224,16 @@ public class LessonService implements LessonAccessPolicy, LessonSourceTextProvid
         }
     }
 
-    private void assertCanViewCourse(Long courseId, Long userId) {
+    private LessonViewAccess assertCanViewCourse(Long courseId, Long userId) {
         if (lessonRepository.countCourse(courseId) == 0) {
             throw new ApiException(ErrorCode.NOT_FOUND, "Course not found");
         }
         UserRole role = currentUserRole(userId);
         if (role == UserRole.ADMIN || lessonRepository.countCourseOwner(courseId, userId) > 0) {
-            return;
+            return LessonViewAccess.MANAGER;
         }
         if (role == UserRole.STUDENT && lessonRepository.countCourseMember(courseId, userId) > 0) {
-            return;
+            return LessonViewAccess.ENROLLED_STUDENT;
         }
         throw new ApiException(role == UserRole.STUDENT ? ErrorCode.ENROLLMENT_REQUIRED : ErrorCode.FORBIDDEN);
     }
@@ -251,10 +253,11 @@ public class LessonService implements LessonAccessPolicy, LessonSourceTextProvid
             .orElseThrow(() -> new ApiException(ErrorCode.NOT_FOUND, "Lesson not found"));
     }
 
-    private LessonResponse toResponse(Lesson lesson) {
+    private LessonResponse toResponse(Lesson lesson, boolean includeTranscript) {
         boolean blocked = lessonRepository.countQuizAttempts(lesson.getId()) > 0;
+        String transcript = includeTranscript ? lesson.getTranscriptText() : null;
         return new LessonResponse(
-            lesson.getId(), lesson.getCourseId(), lesson.getTitle(), lesson.getVideoUrl(), lesson.getTranscriptText(),
+            lesson.getId(), lesson.getCourseId(), lesson.getTitle(), lesson.getVideoUrl(), transcript,
             lesson.getOrderIndex(), documentRepository.countByLessonId(lesson.getId()),
             lessonRepository.countQuizzes(lesson.getId()), lessonRepository.countFlashcards(lesson.getId()),
             !blocked, blocked ? "Bài học đã có lịch sử làm quiz." : null, lesson.getCreatedAt(), lesson.getUpdatedAt()
