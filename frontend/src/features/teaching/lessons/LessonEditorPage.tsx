@@ -1,6 +1,6 @@
 import { DeleteOutlined, DownloadOutlined, UploadOutlined } from '@ant-design/icons'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { Alert, App, Button, Card, Form, Input, List, Popconfirm, Space, Typography, Upload, type UploadFile } from 'antd'
+import { Alert, App, Button, Card, Form, Input, List, Popconfirm, Space, Upload, type UploadFile } from 'antd'
 import { useEffect, useState } from 'react'
 import { useNavigate, useParams, useSearchParams } from 'react-router'
 import { ErrorState, LoadingState } from '../../../shared/components/PageState'
@@ -97,7 +97,7 @@ export function LessonEditorPage() {
 
   return (
     <Card title={isCreating ? 'Thêm bài học mới' : 'Chỉnh sửa bài học'}>
-      {isCreating && <Typography.Paragraph type="secondary">Bài học mới sẽ được thêm vào khóa học #{courseId}.</Typography.Paragraph>}
+      {isCreating && <Alert type="info" showIcon title="Lưu bài học trước khi soạn Quiz hoặc dùng AI & Flashcard" description={`Bài học mới sẽ được thêm vào khóa học #${courseId}. Sau khi bấm Tạo bài học thành công, các tab sẽ được mở.`} style={{ marginBottom: 16 }} />}
       <Form<LessonFormValues> form={form} layout="vertical" onFinish={(values) => saveMutation.mutate(values)} requiredMark="optional">
         <Form.Item name="title" label="Tên bài học" rules={[{ required: true, whitespace: true, message: 'Vui lòng nhập tên bài học.' }, { max: 200, message: 'Tên bài học không được vượt quá 200 ký tự.' }]}>
           <Input placeholder="Ví dụ: JVM và bytecode" />

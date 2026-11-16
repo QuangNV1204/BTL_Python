@@ -23,6 +23,7 @@ import {
   Tag,
   Tooltip,
   Typography,
+  theme,
 } from 'antd'
 import { useEffect, useMemo, useState } from 'react'
 import { useNavigate, useParams } from 'react-router'
@@ -78,6 +79,7 @@ export function QuizEditorPage() {
 }
 
 function QuizEditorForm({ quiz }: { quiz: QuizAuthorDetail }) {
+  const { token } = theme.useToken()
   const navigate = useNavigate()
   const queryClient = useQueryClient()
   const { message, modal } = App.useApp()
@@ -463,7 +465,7 @@ function QuizEditorForm({ quiz }: { quiz: QuizAuthorDetail }) {
               <Space orientation="vertical" size={16} style={{ width: '100%' }}>
                 <div>
                   <Typography.Text strong>
-                    Nội dung câu hỏi <span style={{ color: 'red' }}>*</span>
+                    Nội dung câu hỏi <span style={{ color: token.colorError }}>*</span>
                   </Typography.Text>
                   <Input.TextArea
                     value={q.content}
@@ -480,7 +482,7 @@ function QuizEditorForm({ quiz }: { quiz: QuizAuthorDetail }) {
                 <div>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     <Typography.Text strong>
-                      Các lựa chọn đáp án <span style={{ color: 'red' }}>*</span>
+                      Các lựa chọn đáp án <span style={{ color: token.colorError }}>*</span>
                     </Typography.Text>
                     <Typography.Text type="secondary" style={{ fontSize: 12 }}>
                       (Chọn nút tròn để đánh dấu đáp án đúng)
@@ -508,8 +510,8 @@ function QuizEditorForm({ quiz }: { quiz: QuizAuthorDetail }) {
                                 gap: 12,
                                 padding: '8px 12px',
                                 borderRadius: 8,
-                                border: `1.5px solid ${isCorrect ? '#52c41a' : '#f0f0f0'}`,
-                                background: isCorrect ? '#f6ffed' : '#fafafa',
+                                border: `1.5px solid ${isCorrect ? token.colorSuccessBorder : token.colorBorderSecondary}`,
+                                background: isCorrect ? token.colorSuccessBg : token.colorFillAlter,
                                 cursor: isReadOnly ? 'default' : 'pointer',
                                 transition: 'all 0.2s',
                               }}
@@ -522,7 +524,7 @@ function QuizEditorForm({ quiz }: { quiz: QuizAuthorDetail }) {
                                 value={opt.content}
                                 disabled={isReadOnly}
                                 placeholder={`Nhập lựa chọn ${String.fromCharCode(65 + oIndex)}…`}
-                                style={{ flex: 1, background: '#fff' }}
+                                style={{ flex: 1 }}
                                 onClick={(e) => e.stopPropagation()}
                                 onChange={(e) =>
                                   handleOptionContentChange(
@@ -701,18 +703,19 @@ function CheckItem({
   text: string
   details?: string
 }) {
+  const { token } = theme.useToken()
   return (
     <div>
       <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
         {passed ? (
-          <CheckCircleFilled style={{ color: '#52c41a', fontSize: 16 }} />
+          <CheckCircleFilled style={{ color: token.colorSuccess, fontSize: 16 }} />
         ) : (
-          <CloseCircleFilled style={{ color: '#ff4d4f', fontSize: 16 }} />
+          <CloseCircleFilled style={{ color: token.colorError, fontSize: 16 }} />
         )}
-        <span style={{ color: passed ? 'inherit' : 'rgba(0, 0, 0, 0.65)' }}>{text}</span>
+        <span style={{ color: passed ? token.colorText : token.colorTextSecondary }}>{text}</span>
       </div>
       {!passed && details && (
-        <div style={{ marginLeft: 24, marginTop: 4, fontSize: 12, color: '#ff4d4f' }}>
+        <div style={{ marginLeft: 24, marginTop: 4, fontSize: 12, color: token.colorError }}>
           {details}
         </div>
       )}

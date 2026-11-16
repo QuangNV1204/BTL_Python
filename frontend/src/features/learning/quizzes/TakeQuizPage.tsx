@@ -13,7 +13,8 @@ import { EmptyState, ErrorState, LoadingState } from '../../../shared/components
 import { usePageHeader } from '../../../shared/components/pageHeader'
 import { paths } from '../../../shared/routing/paths'
 import { getStudentQuiz, quizKeys } from '../../teaching/quizzes/quiz.api'
-import { startAttempt, submitAttempt } from '../attempts/attempts.api'
+import { submitAttempt } from '../attempts/attempts.api'
+import { activeAttemptKey, activeAttemptOptions } from '../attempts/activeAttempt'
 
 export function TakeQuizPage() {
   const { quizId = '' } = useParams()
@@ -26,12 +27,13 @@ export function TakeQuizPage() {
     queryFn: () => getStudentQuiz(quizId),
     enabled: Boolean(quizId),
   })
-  const attemptQuery = useQuery({
-    queryKey: ['attempts', 'active', quizId],
-    queryFn: () => startAttempt(quizId),
-    enabled: Boolean(quizId),
-    retry: false,
-  })
+  const attemptQuery = useQuery(activeAttemptOptions(quizId))
+
+  // Release only after leaving the page. Removing an observed query during submit
+  // can recreate it on a render and execute the start POST again.
+  useEffect(() => () => {
+    queryClient.removeQueries({ queryKey: activeAttemptKey(quizId), exact: true })
+  }, [queryClient, quizId])
 
   const quiz = quizQuery.data
   const attempt = attemptQuery.data
@@ -64,7 +66,6 @@ export function TakeQuizPage() {
       )
     },
     onSuccess: (result) => {
-      queryClient.removeQueries({ queryKey: ['attempts', 'active', quizId], exact: true })
       void queryClient.invalidateQueries({ queryKey: ['attempts', 'mine'] })
       void message.success('Nộp bài thành công!')
       navigate(paths.attemptResult(result.id), { replace: true })

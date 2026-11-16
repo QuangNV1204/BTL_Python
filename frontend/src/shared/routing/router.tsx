@@ -10,7 +10,9 @@ import { CourseStudentsPage } from '../../features/marketplace/CourseStudentsPag
 import { ExplorePage } from '../../features/marketplace/ExplorePage'
 import { MyCoursesPage } from '../../features/marketplace/MyCoursesPage'
 import { TeachingCoursesPage } from '../../features/marketplace/TeachingCoursesPage'
-import { createBrowserRouter, type Params, type RouteObject } from 'react-router'
+import { lessonTabs } from './lessonTabs'
+import { NewLessonRedirect } from './NewLessonRedirect'
+import { createBrowserRouter, type Params } from 'react-router'
 import { LoginPage } from '../../features/auth/LoginPage'
 import { ForgotPasswordPage } from '../../features/auth/ForgotPasswordPage'
 import { ResetPasswordPage } from '../../features/auth/ResetPasswordPage'
@@ -21,7 +23,6 @@ import { AppLayout } from '../components/AppLayout'
 import { AuthLayout } from '../components/AuthLayout'
 import { LoadingState, NotFoundState } from '../components/PageState'
 import { RouteErrorPage } from '../components/RouteErrorPage'
-import { DevScreensPage } from '../dev/DevScreensPage'
 import { GuestOnly, HomeRedirect, RequireAccess } from './guards'
 import { paths } from './paths'
 import type { RouteHandle, TabItem } from './routeHandle'
@@ -54,24 +55,12 @@ const courseTabs = (p: Params): TabItem[] => [
   { to: paths.teachingCourseStudents(id(p, 'courseId')), label: 'Học viên' },
 ]
 
-/** Tab trang soạn bài học (prototype lessonHead): Nội dung · Quiz · AI & Flashcard. */
-const lessonTabs = (p: Params): TabItem[] => [
-  { to: paths.teachingLesson(id(p, 'lessonId')), label: 'Nội dung' },
-  { to: paths.teachingLessonQuizzes(id(p, 'lessonId')), label: 'Quiz' },
-  { to: paths.teachingLessonAi(id(p, 'lessonId')), label: 'AI & Flashcard' },
-]
-
 /** Tab trang học bài (prototype learn): Tài liệu · Quiz · Flashcard. */
 const learnTabs = (p: Params): TabItem[] => [
   { to: paths.learnLesson(id(p, 'courseId'), id(p, 'lessonId')), label: 'Tài liệu' },
   { to: paths.learnLessonQuiz(id(p, 'courseId'), id(p, 'lessonId')), label: 'Quiz' },
   { to: paths.learnLessonFlashcards(id(p, 'courseId'), id(p, 'lessonId')), label: 'Flashcard' },
 ]
-
-/** Trang chỉ có khi `npm run dev`: danh sách màn + đổi vai trò. */
-const devRoutes: RouteObject[] = import.meta.env.DEV
-  ? [{ path: '/dev/screens', element: <DevScreensPage />, handle: { title: 'Danh sách màn hình (dev)' } satisfies RouteHandle }]
-  : []
 
 export const router = createBrowserRouter([
   {
@@ -100,7 +89,6 @@ export const router = createBrowserRouter([
     errorElement: <RouteErrorPage />,
     children: [
       { path: paths.home, element: <HomeRedirect /> },
-      ...devRoutes,
       // Ai cũng xem được
       { path: paths.explore, element: <ExplorePage />, handle: { title: 'Khám phá khóa học', search: true } satisfies RouteHandle },
       {
@@ -182,6 +170,8 @@ export const router = createBrowserRouter([
               { path: 'students', element: <CourseStudentsPage /> },
             ],
           },
+          { path: '/teaching/lessons/new/quizzes', element: <NewLessonRedirect /> },
+          { path: '/teaching/lessons/new/ai/*', element: <NewLessonRedirect /> },
           {
             // Soạn bài học: người 3 đặt tên bài + breadcrumb (usePageHeader)
             path: '/teaching/lessons/:lessonId',

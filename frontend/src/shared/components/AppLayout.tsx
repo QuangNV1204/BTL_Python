@@ -132,16 +132,6 @@ function Sidebar() {
         </div>
       ))}
 
-      {import.meta.env.DEV && (
-        <div className="nav-g">
-          <span className="nav-h">Dev</span>
-          <Link className={`nav-i ${pathname === '/dev/screens' ? 'on' : ''}`} to="/dev/screens">
-            <Icon name="list" />
-            Danh sách màn hình
-          </Link>
-        </div>
-      )}
-
       {role === 'GUEST' || !name ? (
         <div className="gbox">
           <p>Đăng nhập để ghi danh, làm quiz và lưu tiến độ học. Hoàn toàn miễn phí.</p>
