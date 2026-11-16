@@ -1,6 +1,6 @@
 # ERD logic
 
-Tên bảng/field chính theo `data-dictionary.md`. Đây là sơ đồ thiết kế, chưa sinh SQL.
+Tên bảng/field chính theo `data-dictionary.md`. `document_cleanup_jobs` (V6) là hàng đợi kỹ thuật độc lập, không FK: được ghi cùng transaction xóa metadata, file chỉ xóa sau commit; thất bại giữ job để retry. Sơ đồ dưới tập trung quan hệ nghiệp vụ.
 
 ```mermaid
 erDiagram

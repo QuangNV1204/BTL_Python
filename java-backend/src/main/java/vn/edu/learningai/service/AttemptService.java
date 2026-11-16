@@ -9,6 +9,9 @@ import vn.edu.learningai.common.enums.QuizStatus;
 import vn.edu.learningai.common.enums.UserRole;
 import vn.edu.learningai.dto.request.SubmitAttemptRequest;
 import vn.edu.learningai.dto.response.AttemptResponse;
+import vn.edu.learningai.dto.response.AttemptSummaryResponse;
+import vn.edu.learningai.dto.response.PageResponse;
+import vn.edu.learningai.repository.AttemptHistoryRepository;
 import vn.edu.learningai.dto.response.AttemptResultResponse;
 import vn.edu.learningai.entity.Question;
 import vn.edu.learningai.entity.QuestionOption;
@@ -47,6 +50,18 @@ public class AttemptService {
     private final QuestionOptionRepository optionRepository;
     private final QuizContextRepository contextRepository;
     private final SecurityHelper security;
+    private final AttemptHistoryRepository historyRepository;
+
+    @Transactional(readOnly = true)
+    public PageResponse<AttemptSummaryResponse> history(
+            int page, int pageSize, Long quizId, Long courseId) {
+        User student = currentStudent();
+        if (page < 1 || pageSize < 1 || pageSize > 100) {
+            throw new ApiException(ErrorCode.VALIDATION_ERROR,
+                "page must be >= 1 and page_size must be between 1 and 100");
+        }
+        return historyRepository.findMine(student.getId(), quizId, courseId, page, pageSize);
+    }
 
     @Transactional(isolation = Isolation.READ_COMMITTED)
     public StartResult start(Long quizId) {

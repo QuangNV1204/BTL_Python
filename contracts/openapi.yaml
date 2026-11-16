@@ -4,8 +4,8 @@ info:
   version: 0.1.0
   description: |
     Partial shared contract: quiz-authoring/read/publication plus start, submit and detail
-    operations for server-authoritative quiz attempts. Other MVP APIs, including AI
-    generation, attempt history and statistics, are not specified here.
+    operations and account-isolated history for server-authoritative quiz attempts.
+    Includes authorized course, quiz and system statistics. AI generation is not specified here.
     All paths include /api/v1; deployment chooses the origin (no server URL is assumed).
     JSON uses snake_case, positive BIGINT IDs as strings and UTC timestamps ending in Z.
     Private operations require an active account and a valid, unexpired access JWT.
@@ -24,6 +24,87 @@ tags:
   - name: Quizzes
   - name: Attempts
 paths:
+  /api/v1/statistics/courses/{course_id}:
+    get:
+      operationId: courseStatistics
+      summary: Course-owner teacher or admin statistics
+      description: Only SUBMITTED attempts count. Completion requires every currently PUBLISHED quiz; zero members or published quizzes yields 0 percent.
+      parameters:
+        - name: course_id
+          in: path
+          required: true
+          schema: { $ref: '#/components/schemas/Id' }
+      responses:
+        '200':
+          description: Authorized course aggregate
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/CourseStatistics' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+  /api/v1/statistics/quizzes/{quiz_id}:
+    get:
+      operationId: quizStatistics
+      summary: Quiz course-owner teacher or admin statistics
+      description: Average covers all SUBMITTED attempts; best score per student is separate. Wrong counts include blank/omitted answers. No submissions yields null average and empty arrays.
+      parameters:
+        - name: quiz_id
+          in: path
+          required: true
+          schema: { $ref: '#/components/schemas/Id' }
+      responses:
+        '200':
+          description: Authorized quiz aggregate
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/QuizStatistics' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+  /api/v1/statistics/system:
+    get:
+      operationId: systemStatistics
+      summary: Admin-only system statistics
+      responses:
+        '200':
+          description: Counts; teachers includes all teacher accounts, published courses exclude archived courses.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SystemStatistics' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+  /api/v1/users/me/attempts:
+    get:
+      tags: [Attempts]
+      operationId: listMyAttempts
+      summary: List the authenticated student's own attempts
+      description: |
+        STUDENT only. Identity is derived from the active authenticated account, never
+        a caller-provided student_id. Includes IN_PROGRESS and SUBMITTED attempts,
+        including history in archived/unpublished courses or after enrollment removal.
+        Optional filters combine with AND and also apply to total. Ordered by started_at
+        descending, then id descending. No answer keys, explanations or review data.
+      parameters:
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/PageSize'
+        - name: quiz_id
+          in: query
+          schema: { $ref: '#/components/schemas/Id' }
+        - name: course_id
+          in: query
+          schema: { $ref: '#/components/schemas/Id' }
+      responses:
+        '200':
+          description: Own history; empty results and out-of-range pages return an empty items array.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/AttemptHistoryPage' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
   /api/v1/lessons/{lesson_id}/quizzes:
     parameters:
       - $ref: '#/components/parameters/LessonId'
@@ -417,6 +498,57 @@ components:
         application/json:
           schema: { $ref: '#/components/schemas/Error' }
   schemas:
+    CourseStatistics:
+      type: object
+      additionalProperties: false
+      required: [course_id, enrolled_students, quiz_count, submitted_attempts, completed_students, completion_rate, generated_at]
+      properties:
+        course_id: { $ref: '#/components/schemas/Id' }
+        enrolled_students: { type: integer, minimum: 0 }
+        quiz_count: { type: integer, minimum: 0 }
+        submitted_attempts: { type: integer, minimum: 0 }
+        completed_students: { type: integer, minimum: 0 }
+        completion_rate: { type: number, minimum: 0, maximum: 100 }
+        generated_at: { $ref: '#/components/schemas/UtcTimestamp' }
+    QuizStatistics:
+      type: object
+      additionalProperties: false
+      required: [quiz_id, submitted_attempts, unique_students, average_score, best_scores, hardest_questions, generated_at]
+      properties:
+        quiz_id: { $ref: '#/components/schemas/Id' }
+        submitted_attempts: { type: integer, minimum: 0 }
+        unique_students: { type: integer, minimum: 0 }
+        average_score: { type: [number, 'null'], minimum: 0, maximum: 100 }
+        best_scores:
+          type: array
+          items:
+            type: object
+            additionalProperties: false
+            required: [student_id, score]
+            properties:
+              student_id: { $ref: '#/components/schemas/Id' }
+              score: { type: number, minimum: 0, maximum: 100 }
+        hardest_questions:
+          type: array
+          items:
+            type: object
+            additionalProperties: false
+            required: [question_id, wrong_count]
+            properties:
+              question_id: { $ref: '#/components/schemas/Id' }
+              wrong_count: { type: integer, minimum: 0 }
+        generated_at: { $ref: '#/components/schemas/UtcTimestamp' }
+    SystemStatistics:
+      type: object
+      additionalProperties: false
+      required: [active_users, teachers, published_courses, enrollments, submitted_attempts, generated_at]
+      properties:
+        active_users: { type: integer, minimum: 0 }
+        teachers: { type: integer, minimum: 0 }
+        published_courses: { type: integer, minimum: 0 }
+        enrollments: { type: integer, minimum: 0 }
+        submitted_attempts: { type: integer, minimum: 0 }
+        generated_at: { $ref: '#/components/schemas/UtcTimestamp' }
     Id:
       type: string
       pattern: '^[1-9][0-9]*$'
@@ -607,6 +739,35 @@ components:
         title: { $ref: '#/components/schemas/Title' }
         status: { $ref: '#/components/schemas/QuizStatus' }
         question_count: { type: integer, minimum: 0 }
+    AttemptSummary:
+      type: object
+      additionalProperties: false
+      required: [id, quiz_id, quiz_title, course_id, course_title, status, score, started_at, submitted_at]
+      properties:
+        id: { $ref: '#/components/schemas/Id' }
+        quiz_id: { $ref: '#/components/schemas/Id' }
+        quiz_title: { type: string }
+        course_id: { $ref: '#/components/schemas/Id' }
+        course_title: { type: string }
+        status: { $ref: '#/components/schemas/AttemptStatus' }
+        score: { type: [number, 'null'], minimum: 0, maximum: 100 }
+        started_at: { $ref: '#/components/schemas/UtcTimestamp' }
+        submitted_at:
+          oneOf:
+            - { $ref: '#/components/schemas/UtcTimestamp' }
+            - { type: 'null' }
+    AttemptHistoryPage:
+      type: object
+      additionalProperties: false
+      required: [items, page, page_size, total]
+      properties:
+        items:
+          type: array
+          maxItems: 100
+          items: { $ref: '#/components/schemas/AttemptSummary' }
+        page: { type: integer, minimum: 1, maximum: 2147483647 }
+        page_size: { type: integer, minimum: 1, maximum: 100 }
+        total: { type: integer, minimum: 0 }
     AttemptStatus:
       type: string
       enum: [IN_PROGRESS, SUBMITTED]

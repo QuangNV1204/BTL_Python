@@ -47,11 +47,12 @@ class AttemptServiceTest {
     @Mock QuestionOptionRepository options;
     @Mock(mockMaker = MockMakers.SUBCLASS) QuizContextRepository context;
     @Mock(mockMaker = MockMakers.SUBCLASS) SecurityHelper security;
+    @Mock(mockMaker = MockMakers.SUBCLASS) vn.edu.learningai.repository.AttemptHistoryRepository history;
     AttemptService service;
 
     @BeforeEach
     void setUp() {
-        service = new AttemptService(attempts, answers, quizzes, questions, options, context, security);
+        service = new AttemptService(attempts, answers, quizzes, questions, options, context, security, history);
         when(security.getCurrentUser()).thenReturn(User.builder().id(4L).role(UserRole.STUDENT).isActive(true).build());
     }
 
@@ -247,6 +248,49 @@ class AttemptServiceTest {
         assertThat(result.score()).isEqualByComparingTo("66.67");
         assertThat(result.correctCount()).isEqualTo(2);
         verify(answers, never()).saveAll(any());
+    }
+
+    @Test
+    void historyUsesAuthenticatedStudentAndBothFilters() {
+        var expected = new vn.edu.learningai.dto.response.PageResponse<vn.edu.learningai.dto.response.AttemptSummaryResponse>(
+            List.of(), 2, 10, 0L);
+        when(history.findMine(4L, 30L, 20L, 2, 10)).thenReturn(expected);
+        assertThat(service.history(2, 10, 30L, 20L)).isSameAs(expected);
+        verify(history).findMine(4L, 30L, 20L, 2, 10);
+    }
+
+    @Test
+    void historyRejectsInvalidPaginationWithoutQuerying() {
+        for (int[] input : List.of(new int[]{0, 20}, new int[]{-1, 20},
+                new int[]{1, 0}, new int[]{1, 101})) {
+            assertThatThrownBy(() -> service.history(input[0], input[1], null, null))
+                .isInstanceOfSatisfying(ApiException.class,
+                    e -> assertThat(e.getErrorCode()).isEqualTo(ErrorCode.VALIDATION_ERROR));
+        }
+        org.mockito.Mockito.verifyNoInteractions(history);
+    }
+
+    @Test
+    void nonStudentCannotReadHistory() {
+        when(security.getCurrentUser()).thenReturn(User.builder().id(2L).role(UserRole.TEACHER).build());
+        assertThatThrownBy(() -> service.history(1, 20, null, null))
+            .isInstanceOfSatisfying(ApiException.class,
+                e -> assertThat(e.getErrorCode()).isEqualTo(ErrorCode.FORBIDDEN));
+        org.mockito.Mockito.verifyNoInteractions(history);
+    }
+
+    @Test
+    void otherStudentCannotReadOrSubmitAttempt() {
+        QuizAttempt other = attempt(AttemptStatus.IN_PROGRESS);
+        other.setStudentId(6L);
+        when(attempts.findById(50L)).thenReturn(Optional.of(other));
+        when(attempts.findByIdForUpdate(50L)).thenReturn(Optional.of(other));
+        assertThatThrownBy(() -> service.get(50L)).isInstanceOfSatisfying(ApiException.class,
+            e -> assertThat(e.getErrorCode()).isEqualTo(ErrorCode.NOT_FOUND));
+        assertThatThrownBy(() -> service.submit(50L, new SubmitAttemptRequest(List.of())))
+            .isInstanceOfSatisfying(ApiException.class,
+                e -> assertThat(e.getErrorCode()).isEqualTo(ErrorCode.NOT_FOUND));
+        org.mockito.Mockito.verifyNoInteractions(answers, quizzes, questions, options);
     }
 
     private Quiz quiz(QuizStatus status) {

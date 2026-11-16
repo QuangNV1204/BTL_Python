@@ -8,6 +8,9 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import vn.edu.learningai.dto.response.AttemptSummaryResponse;
+import vn.edu.learningai.dto.response.PageResponse;
 import org.springframework.web.bind.annotation.RestController;
 import vn.edu.learningai.dto.request.SubmitAttemptRequest;
 import vn.edu.learningai.dto.response.AttemptResponse;
@@ -23,6 +26,17 @@ import java.net.URI;
 @RequiredArgsConstructor
 public class AttemptController {
     private final AttemptService attemptService;
+
+    @GetMapping("/users/me/attempts")
+    public PageResponse<AttemptSummaryResponse> history(
+            @RequestParam(defaultValue = "1") int page,
+            @RequestParam(name = "page_size", defaultValue = "20") int pageSize,
+            @RequestParam(name = "quiz_id", required = false) String quizId,
+            @RequestParam(name = "course_id", required = false) String courseId) {
+        return attemptService.history(page, pageSize,
+            quizId == null ? null : positiveLong(quizId, "quiz_id"),
+            courseId == null ? null : positiveLong(courseId, "course_id"));
+    }
 
     @PostMapping("/quizzes/{quiz_id}/attempts")
     public ResponseEntity<AttemptResponse> start(@PathVariable("quiz_id") String quizId) {

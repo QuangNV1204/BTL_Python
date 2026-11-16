@@ -1,7 +1,10 @@
 import {
+  advanceSessionGeneration,
   apiGet,
   apiPost,
+  getSessionGeneration,
   isApiError,
+  requireSessionGeneration,
   setAccessTokenProvider,
   setRefreshTokenHandler,
   setSessionExpiredHandler,
@@ -20,7 +23,16 @@ let accessToken: string | null = null
 let refreshPromise: Promise<void> | null = null
 let restorePromise: Promise<void> | null = null
 let logoutPromise: Promise<void> | null = null
+let logoutGeneration: number | null = null
+// Cookie-changing operations must finish in order, even if their UI result is stale.
+let cookieQueue: Promise<unknown> = Promise.resolve()
 const listeners = new Set<() => void>()
+
+function queueCookieOperation<T>(operation: () => Promise<T>): Promise<T> {
+  const result = cookieQueue.then(operation, operation)
+  cookieQueue = result.then(() => undefined, () => undefined)
+  return result
+}
 
 function updateSession(nextState: SessionState): void {
   state = nextState
@@ -42,10 +54,14 @@ export function updateCurrentUser(user: User): void {
   }
 }
 
-function clearSession(): void {
+function clearSession(): number {
+  const generation = advanceSessionGeneration()
   accessToken = null
+  refreshPromise = null
+  restorePromise = null
   queryClient.clear()
   updateSession({ user: null, isLoading: false, error: null })
+  return generation
 }
 
 function refreshAccessToken(): Promise<void> {
@@ -53,67 +69,77 @@ function refreshAccessToken(): Promise<void> {
     return Promise.reject(new DOMException('Đang đăng xuất', 'AbortError'))
   }
   if (!refreshPromise) {
-    refreshPromise = apiPost<AuthResponse>('/auth/refresh', undefined, { auth: false })
-      .then((response) => {
-        accessToken = response.access_token
-      })
-      .finally(() => {
-        refreshPromise = null
-      })
+    const generation = getSessionGeneration()
+    const pending = queueCookieOperation(async () => {
+      requireSessionGeneration(generation)
+      const response = await apiPost<AuthResponse>('/auth/refresh', undefined, { auth: false })
+      requireSessionGeneration(generation)
+      accessToken = response.access_token
+    }).finally(() => {
+      if (refreshPromise === pending) refreshPromise = null
+    })
+    refreshPromise = pending
   }
   return refreshPromise
 }
 
 export function restoreSession(): Promise<void> {
-  if (logoutPromise) {
-    return logoutPromise
-  }
+  if (logoutPromise) return logoutPromise
   if (!restorePromise) {
+    const generation = getSessionGeneration()
     updateSession({ ...state, isLoading: true, error: null })
-    restorePromise = (async () => {
+    const pending = (async () => {
       try {
         await refreshAccessToken()
+        requireSessionGeneration(generation)
         const user = await apiGet<User>('/users/me')
+        requireSessionGeneration(generation)
         updateSession({ user, isLoading: false, error: null })
       } catch (error) {
-        if (isApiError(error) && (error.status === 401 || error.code === 'ACCOUNT_INACTIVE')) {
-          clearSession()
-        } else {
-          accessToken = null
+        if (generation !== getSessionGeneration()) return
+        clearSession()
+        if (!(isApiError(error) && (error.status === 401 || error.code === 'ACCOUNT_INACTIVE'))) {
           updateSession({ user: null, isLoading: false, error })
         }
-      } finally {
-        restorePromise = null
       }
-    })()
+    })().finally(() => {
+      if (restorePromise === pending) restorePromise = null
+    })
+    restorePromise = pending
   }
   return restorePromise
 }
 
 export async function login(request: LoginRequest): Promise<User> {
-  const response = await apiPost<AuthResponse>('/auth/login', request, { auth: false })
-  queryClient.clear()
-  accessToken = response.access_token
+  const generation = clearSession()
   try {
+    const response = await queueCookieOperation(async () => {
+      requireSessionGeneration(generation)
+      return apiPost<AuthResponse>('/auth/login', request, { auth: false })
+    })
+    requireSessionGeneration(generation)
+    accessToken = response.access_token
     const user = await apiGet<User>('/users/me')
+    requireSessionGeneration(generation)
     updateSession({ user, isLoading: false, error: null })
     return user
   } catch (error) {
-    clearSession()
+    if (generation === getSessionGeneration()) clearSession()
     throw error
   }
 }
 
 export function logout(): Promise<void> {
-  if (!logoutPromise) {
-    logoutPromise = (async () => {
-      const pendingSession = restorePromise ?? refreshPromise
-      await pendingSession?.catch(() => undefined)
-      await apiPost<void>('/auth/logout', undefined, { auth: false })
-      clearSession()
-    })().finally(() => {
-      logoutPromise = null
-    })
+  if (!logoutPromise || logoutGeneration !== getSessionGeneration()) {
+    logoutGeneration = clearSession()
+    const pending = queueCookieOperation(() => apiPost<void>('/auth/logout', undefined, { auth: false }))
+      .finally(() => {
+        if (logoutPromise === pending) {
+          logoutPromise = null
+          logoutGeneration = null
+        }
+      })
+    logoutPromise = pending
   }
   return logoutPromise
 }

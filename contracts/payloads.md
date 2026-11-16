@@ -29,7 +29,7 @@ Field dưới đây là thiết kế; khi viết OpenAPI phải khai báo requir
 | Attempt | Không ghi trực tiếp | id, quiz_id, student_id, status, started_at; IN_PROGRESS không có review/đáp án |
 | Submit | answers[{question_id,selected_option_id nullable}] | Result |
 | Result | Không ghi | Attempt + score, total_questions, correct_count, submitted_at, review[{question_id,selected_option_id,is_correct,correct_option_id,explanation}] |
-| AttemptSummary | Không ghi | id, quiz_id, status, score nullable, started_at, submitted_at nullable |
+| AttemptSummary | Không ghi | id, quiz_id, quiz_title, course_id, course_title, status, score nullable, started_at, submitted_at nullable |
 | CourseStatistics | Không ghi | course_id, enrolled_students, quiz_count, submitted_attempts, completed_students, completion_rate, generated_at |
 | QuizStatistics | Không ghi | quiz_id, submitted_attempts, unique_students, average_score nullable, best_scores[{student_id,score}], hardest_questions[{question_id,wrong_count}], generated_at |
 | SystemStatistics | Không ghi | active_users, teachers, published_courses, enrollments, submitted_attempts, generated_at |

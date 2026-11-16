@@ -1,3 +1,4 @@
+import { CourseStatisticsPage, QuizStatisticsPage, SystemStatisticsPage } from '../../features/teaching/statistics/StatisticsPages'
 import { LessonEditorPage } from '../../features/teaching/lessons/LessonEditorPage'
 import { LearningDocumentsPage } from '../../features/learning/LearningDocumentsPage'
 import { LearningLessonLayout } from '../../features/learning/LearningLessonLayout'
@@ -16,13 +17,11 @@ import { setUnauthorizedHandler } from '../api/client'
 import { AppLayout } from '../components/AppLayout'
 import { AuthLayout } from '../components/AuthLayout'
 import { LoadingState, NotFoundState } from '../components/PageState'
-import { PlaceholderPage } from '../components/PlaceholderPage'
 import { RouteErrorPage } from '../components/RouteErrorPage'
 import { DevScreensPage } from '../dev/DevScreensPage'
 import { HomeRedirect, RequireAccess } from './guards'
 import { paths } from './paths'
 import type { RouteHandle, TabItem } from './routeHandle'
-import { SCREENS, type ScreenKey } from './screens'
 import { LessonAiPage } from '../../features/teaching/ai/LessonAiPage'
 import { AiPreviewPage } from '../../features/teaching/ai/AiPreviewPage'
 import { LearnFlashcardsPage } from '../../features/learning/flashcards/LearnFlashcardsPage'
@@ -42,12 +41,6 @@ import { AttemptResultPage } from '../../features/learning/quizzes/AttemptResult
  *   element: <TrangMoi />, handle: { title: '...' }
  * Trang có tab: mỗi tab là một route con, mỗi người chỉ sửa route tab của mình.
  */
-
-/** Trang giữ chỗ của một màn trong SCREENS. */
-function todo(key: ScreenKey, extra: Omit<RouteHandle, 'title'> = {}): Pick<RouteObject, 'element' | 'handle'> {
-  const screen = SCREENS[key]
-  return { element: <PlaceholderPage screen={screen} />, handle: { title: screen.title, ...extra } satisfies RouteHandle }
-}
 
 const id = (params: Params, key: string) => params[key] ?? ''
 
@@ -206,8 +199,8 @@ export const router = createBrowserRouter([
             element: <QuizEditorPage />,
             handle: { title: 'Soạn quiz' } satisfies RouteHandle,
           },
-          { path: paths.teachingStatistics, ...todo('courseStatistics') },
-          { path: '/teaching/statistics/quizzes/:quizId', ...todo('quizStatistics') },
+          { path: paths.teachingStatistics, element: <CourseStatisticsPage /> },
+          { path: '/teaching/statistics/quizzes/:quizId', element: <QuizStatisticsPage /> },
         ],
       },
       // Quản trị
@@ -242,7 +235,7 @@ export const router = createBrowserRouter([
             handle: { title: 'Danh mục' } satisfies RouteHandle,
           },
           { path: paths.adminCourses, element: <AdminCoursesPage />, handle: { title: 'Khóa học' } satisfies RouteHandle },
-          { path: paths.adminStatistics, ...todo('adminStatistics') },
+          { path: paths.adminStatistics, element: <SystemStatisticsPage /> },
         ],
       },
       { path: '*', element: <NotFoundState />, handle: { title: 'Không tìm thấy trang' } satisfies RouteHandle },

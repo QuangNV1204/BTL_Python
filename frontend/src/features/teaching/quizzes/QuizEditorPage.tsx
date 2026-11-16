@@ -32,13 +32,11 @@ import { paths } from '../../../shared/routing/paths'
 import {
   addQuestion,
   createQuiz,
-  deleteQuestion,
   getQuiz,
   publishQuiz,
   quizKeys,
-  updateQuestion,
-  updateQuiz,
 } from './quiz.api'
+import { saveQuizDraft } from './saveQuizDraft'
 import type { QuizAuthorDetail, QuizOptionAuthor, QuizQuestionAuthor, QuizStatus } from './quiz.types'
 
 interface LocalQuestion extends Omit<QuizQuestionAuthor, 'options'> {
@@ -83,7 +81,8 @@ function QuizEditorForm({ quiz }: { quiz: QuizAuthorDetail }) {
   const queryClient = useQueryClient()
   const { message, modal } = App.useApp()
 
-  const isReadOnly = quiz.status !== 'DRAFT'
+  const [isSaving, setIsSaving] = useState(false)
+  const isReadOnly = quiz.status !== 'DRAFT' || isSaving
 
   const [title, setTitle] = useState(quiz.title)
   const [questions, setQuestions] = useState<LocalQuestion[]>(() =>
@@ -159,32 +158,14 @@ function QuizEditorForm({ quiz }: { quiz: QuizAuthorDetail }) {
   // Mutation lưu quiz và câu hỏi
   const saveMutation = useMutation({
     mutationFn: async () => {
-      if (title.trim() && title !== quiz.title) {
-        await updateQuiz(quiz.id, { title: title.trim() })
-      }
-
-      for (const id of deletedQuestionIds) {
-        await deleteQuestion(id)
-      }
-
-      for (let i = 0; i < questions.length; i++) {
-        const q = questions[i]
-        const payload = {
-          content: q.content.trim(),
-          explanation: q.explanation?.trim() || undefined,
-          order_index: i,
-          options: q.options.map((opt, optIndex) => ({
-            content: opt.content.trim(),
-            is_correct: opt.isCorrect,
-            order_index: optIndex,
-          })),
-        }
-
-        if (q.id && !q.isNew) {
-          await updateQuestion(q.id, payload)
-        } else {
-          await addQuestion(quiz.id, payload)
-        }
+      setIsSaving(true)
+      try {
+        await saveQuizDraft(quiz.id, title, questions, deletedQuestionIds,
+          (index, saved) => setQuestions((previous) => previous.map((q, i) =>
+            i === index ? { ...saved, isNew: false } : q)),
+          (id) => setDeletedQuestionIds((previous) => previous.filter((value) => value !== id)))
+      } finally {
+        setIsSaving(false)
       }
     },
     onSuccess: async () => {
@@ -640,6 +621,7 @@ function QuizEditorForm({ quiz }: { quiz: QuizAuthorDetail }) {
                     icon={<SaveOutlined />}
                     block
                     loading={saveMutation.isPending}
+                    disabled={saveMutation.isPending || publishMutation.isPending}
                     onClick={() => saveMutation.mutate()}
                   >
                     Lưu nháp
@@ -647,7 +629,7 @@ function QuizEditorForm({ quiz }: { quiz: QuizAuthorDetail }) {
                   <Button
                     type="primary"
                     block
-                    disabled={!validation.canPublish || publishMutation.isPending}
+                    disabled={!validation.canPublish || publishMutation.isPending || saveMutation.isPending}
                     loading={publishMutation.isPending}
                     onClick={handleConfirmPublish}
                   >

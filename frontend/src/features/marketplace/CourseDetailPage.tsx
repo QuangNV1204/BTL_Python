@@ -1,3 +1,4 @@
+import { StartLearningButton } from '../learning/StartLearningButton'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { App, Button, Card, Col, List, Row, Space, Tag, Typography } from 'antd'
 import { Link, useParams } from 'react-router'
@@ -50,7 +51,6 @@ export function CourseDetailPage() {
   if (courseQuery.isError) return <ErrorState error={courseQuery.error} onRetry={() => void courseQuery.refetch()} />
   const course = courseQuery.data!
   const enrolled = mineQuery.data?.items.some((item) => item.id === course.id) ?? false
-  const firstLessonId = course.outline[0]?.id
   const primaryAction = (() => {
     if (viewer.role === 'GUEST') {
       return (
@@ -68,15 +68,7 @@ export function CourseDetailPage() {
         </Typography.Text>
       )
     }
-    if (enrolled && firstLessonId) {
-      return (
-        <Link to={paths.learnLesson(course.id, firstLessonId)}>
-          <Button type="primary" block>
-            Vào học
-          </Button>
-        </Link>
-      )
-    }
+    if (enrolled) return <StartLearningButton courseId={course.id} block />
     return (
       <Button type="primary" block loading={enrollMutation.isPending} onClick={() => enrollMutation.mutate()}>
         Ghi danh miễn phí

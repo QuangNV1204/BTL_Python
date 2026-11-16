@@ -40,6 +40,53 @@ class AttemptControllerTest {
     }
 
     @Test
+    void historyEndpointExists() throws Exception {
+        var item = new vn.edu.learningai.dto.response.AttemptSummaryResponse(
+            "50", "30", "Quiz", "20", "Course", AttemptStatus.IN_PROGRESS, null,
+            Instant.parse("2026-11-14T00:00:00Z"), null);
+        when(service.history(1, 20, null, null)).thenReturn(
+            new vn.edu.learningai.dto.response.PageResponse<>(List.of(item), 1, 20, 1L));
+        mvc.perform(get("/api/v1/users/me/attempts"))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.page").value(1))
+            .andExpect(jsonPath("$.page_size").value(20))
+            .andExpect(jsonPath("$.total").value(1))
+            .andExpect(jsonPath("$.items[0].id").value("50"))
+            .andExpect(jsonPath("$.items[0].quiz_title").value("Quiz"))
+            .andExpect(jsonPath("$.items[0].started_at").value("2026-11-14T00:00:00Z"))
+            .andExpect(jsonPath("$.items[0].score").value(org.hamcrest.Matchers.nullValue()))
+            .andExpect(jsonPath("$.items[0].review").doesNotExist())
+            .andExpect(jsonPath("$.items[0].correct_option_id").doesNotExist())
+            .andExpect(jsonPath("$.items[0].explanation").doesNotExist());
+    }
+
+    @Test
+    void historyPassesPaginationAndBothFilters() throws Exception {
+        when(service.history(2, 10, 30L, 20L)).thenReturn(
+            new vn.edu.learningai.dto.response.PageResponse<>(List.of(), 2, 10, 0L));
+        mvc.perform(get("/api/v1/users/me/attempts?page=2&page_size=10&quiz_id=30&course_id=20"))
+            .andExpect(status().isOk()).andExpect(jsonPath("$.items").isEmpty());
+        verify(service).history(2, 10, 30L, 20L);
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"0", "-1", "01", "abc", "9223372036854775808", ""})
+    void historyRejectsInvalidFilterIds(String id) throws Exception {
+        for (String filter : List.of("quiz_id", "course_id")) {
+            mvc.perform(get("/api/v1/users/me/attempts").param(filter, id))
+                .andExpect(status().isBadRequest());
+        }
+        verifyNoInteractions(service);
+    }
+
+    @Test
+    void historyRejectsNonNumericPagination() throws Exception {
+        mvc.perform(get("/api/v1/users/me/attempts?page=abc"))
+            .andExpect(status().isBadRequest());
+        verifyNoInteractions(service);
+    }
+
+    @Test
     void newStartReturns201AndLocation() throws Exception {
         var attempt = new AttemptResponse("50", "30", "4", AttemptStatus.IN_PROGRESS, 3,
             Instant.parse("2026-11-14T00:00:00Z"));

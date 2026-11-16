@@ -1,3 +1,4 @@
+import { getSession } from '../../../shared/auth/session'
 import type { GeneratedCards, GeneratedQuiz, GenerationRequest, QuizQuestion } from './api'
 
 export type AiDraft =
@@ -23,7 +24,7 @@ export type AiDraft =
     request?: GenerationRequest
   }
 
-const key = (lessonId: string) => `lesson-ai-preview:${lessonId}`
+const key = (lessonId: string) => `lesson-ai-preview:${getSession().user?.id ?? 'guest'}:${lessonId}`
 
 export function readDraft(lessonId: string): AiDraft | null {
   try {
@@ -34,11 +35,19 @@ export function readDraft(lessonId: string): AiDraft | null {
 }
 
 export function writeDraft(lessonId: string, draft: AiDraft): void {
-  sessionStorage.setItem(key(lessonId), JSON.stringify(draft))
+  try {
+    sessionStorage.setItem(key(lessonId), JSON.stringify(draft))
+  } catch {
+    // The in-memory preview remains usable when browser storage is unavailable.
+  }
 }
 
 export function clearDraft(lessonId: string): void {
-  sessionStorage.removeItem(key(lessonId))
+  try {
+    sessionStorage.removeItem(key(lessonId))
+  } catch {
+    // Leaving the preview must still work with blocked browser storage.
+  }
 }
 
 export function quizDraft(result: GeneratedQuiz): AiDraft {

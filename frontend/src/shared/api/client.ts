@@ -24,6 +24,21 @@ export function isApiError(error: unknown): error is ApiError {
 
 type TokenProvider = () => string | null | undefined
 let accessTokenProvider: TokenProvider = () => null
+let sessionGeneration = 0
+
+export function advanceSessionGeneration(): number {
+  return ++sessionGeneration
+}
+
+export function getSessionGeneration(): number {
+  return sessionGeneration
+}
+
+export function requireSessionGeneration(generation: number): void {
+  if (generation !== sessionGeneration) {
+    throw new DOMException('Phiên đăng nhập đã thay đổi', 'AbortError')
+  }
+}
 
 export function setAccessTokenProvider(provider: TokenProvider): void {
   accessTokenProvider = provider
@@ -120,7 +135,9 @@ function expireSession(): void {
   unauthorizedHandler?.()
 }
 
-async function sendRequest<T>(method: string, path: string, options: RequestOptions, retried = false): Promise<T> {
+async function sendRequest<T>(method: string, path: string, options: RequestOptions, retried = false,
+    generation = getSessionGeneration()): Promise<T> {
+  requireSessionGeneration(generation)
   const token = options.auth === false ? null : accessTokenProvider()
   let response: Response
   try {
@@ -137,13 +154,16 @@ async function sendRequest<T>(method: string, path: string, options: RequestOpti
       signal: options.signal,
     })
   } catch (error) {
+    requireSessionGeneration(generation)
     if (error instanceof DOMException && error.name === 'AbortError') {
       throw error
     }
     throw new ApiError(0, { code: 'NETWORK_ERROR', message: 'Không kết nối được máy chủ' })
   }
+  requireSessionGeneration(generation)
   if (!response.ok) {
     const apiError = await toApiError(response)
+    requireSessionGeneration(generation)
     if (response.status === 401 && token) {
       if (!retried && refreshTokenHandler) {
         try {
@@ -151,13 +171,15 @@ async function sendRequest<T>(method: string, path: string, options: RequestOpti
             await refreshTokenHandler()
           }
         } catch (error) {
+          requireSessionGeneration(generation)
           if (isApiError(error) && (error.status === 401 || error.code === 'ACCOUNT_INACTIVE')) {
             expireSession()
           }
           throw error
         }
+        requireSessionGeneration(generation)
         options.signal?.throwIfAborted()
-        return sendRequest<T>(method, path, options, true)
+        return sendRequest<T>(method, path, options, true, generation)
       }
       expireSession()
     } else if (token && apiError.code === 'ACCOUNT_INACTIVE') {
@@ -168,7 +190,9 @@ async function sendRequest<T>(method: string, path: string, options: RequestOpti
   if (response.status === 204 || response.headers.get('Content-Length') === '0') {
     return undefined as T
   }
-  return (await response.json()) as T
+  const body = (await response.json()) as T
+  requireSessionGeneration(generation)
+  return body
 }
 
 export function apiRequest<T>(method: string, path: string, options: RequestOptions = {}): Promise<T> {
@@ -185,7 +209,9 @@ export const apiPatch = <T>(path: string, body?: unknown, options?: RequestOptio
   apiRequest<T>('PATCH', path, { ...options, body })
 export const apiDelete = <T = void>(path: string, options?: RequestOptions) =>
   apiRequest<T>('DELETE', path, options)
-export async function apiGetBlob(path: string, options: Omit<RequestOptions, 'body'> = {}, retried = false): Promise<Blob> {
+export async function apiGetBlob(path: string, options: Omit<RequestOptions, 'body'> = {}, retried = false,
+    generation = getSessionGeneration()): Promise<Blob> {
+  requireSessionGeneration(generation)
   const token = options.auth === false ? null : accessTokenProvider()
   let response: Response
   try {
@@ -196,11 +222,14 @@ export async function apiGetBlob(path: string, options: Omit<RequestOptions, 'bo
       signal: options.signal,
     })
   } catch (error) {
+    requireSessionGeneration(generation)
     if (error instanceof DOMException && error.name === 'AbortError') throw error
     throw new ApiError(0, { code: 'NETWORK_ERROR', message: 'Không kết nối được máy chủ' })
   }
+  requireSessionGeneration(generation)
   if (!response.ok) {
     const apiError = await toApiError(response)
+    requireSessionGeneration(generation)
     if (response.status === 401 && token) {
       if (!retried && refreshTokenHandler) {
         try {
@@ -208,13 +237,15 @@ export async function apiGetBlob(path: string, options: Omit<RequestOptions, 'bo
             await refreshTokenHandler()
           }
         } catch (error) {
+          requireSessionGeneration(generation)
           if (isApiError(error) && (error.status === 401 || error.code === 'ACCOUNT_INACTIVE')) {
             expireSession()
           }
           throw error
         }
+        requireSessionGeneration(generation)
         options.signal?.throwIfAborted()
-        return apiGetBlob(path, options, true)
+        return apiGetBlob(path, options, true, generation)
       }
       expireSession()
     } else if (token && apiError.code === 'ACCOUNT_INACTIVE') {
@@ -222,5 +253,7 @@ export async function apiGetBlob(path: string, options: Omit<RequestOptions, 'bo
     }
     throw apiError
   }
-  return response.blob()
+  const body = await response.blob()
+  requireSessionGeneration(generation)
+  return body
 }

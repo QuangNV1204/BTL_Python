@@ -5,7 +5,7 @@ import {
   RightOutlined,
   SendOutlined,
 } from '@ant-design/icons'
-import { useMutation, useQuery } from '@tanstack/react-query'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Alert, App, Button, Card, Col, Progress, Radio, Row, Space, Tag, Typography } from 'antd'
 import { useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router'
@@ -18,6 +18,7 @@ import { startAttempt, submitAttempt } from '../attempts/attempts.api'
 export function TakeQuizPage() {
   const { quizId = '' } = useParams()
   const navigate = useNavigate()
+  const queryClient = useQueryClient()
   const { modal, message } = App.useApp()
 
   const quizQuery = useQuery({
@@ -63,6 +64,8 @@ export function TakeQuizPage() {
       )
     },
     onSuccess: (result) => {
+      queryClient.removeQueries({ queryKey: ['attempts', 'active', quizId], exact: true })
+      void queryClient.invalidateQueries({ queryKey: ['attempts', 'mine'] })
       void message.success('Nộp bài thành công!')
       navigate(paths.attemptResult(result.id), { replace: true })
     },

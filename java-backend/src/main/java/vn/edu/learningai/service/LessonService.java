@@ -42,6 +42,7 @@ public class LessonService implements LessonAccessPolicy, LessonSourceTextProvid
     private final UserRepository userRepository;
     private final DocumentStorage documentStorage;
     private final DocumentTextExtractor textExtractor;
+    private final DocumentCleanupService documentCleanup;
 
     @Transactional(readOnly = true)
     public List<LessonResponse> listForCourse(Long courseId, Long userId) {
@@ -108,8 +109,9 @@ public class LessonService implements LessonAccessPolicy, LessonSourceTextProvid
         if (lessonRepository.countQuizzes(lessonId) > 0 || lessonRepository.countFlashcards(lessonId) > 0) {
             throw new ApiException(ErrorCode.INVALID_STATE, "Delete draft quiz and flashcard content before deleting the lesson");
         }
-        documentRepository.findByLessonIdOrderByCreatedAtAsc(lessonId).forEach(document -> documentStorage.delete(document.getStorageKey()));
-        documentRepository.deleteAll(documentRepository.findByLessonIdOrderByCreatedAtAsc(lessonId));
+        var documents = documentRepository.findByLessonIdOrderByCreatedAtAsc(lessonId);
+        documents.forEach(document -> documentCleanup.afterCommit(document.getStorageKey()));
+        documentRepository.deleteAll(documents);
         lessonRepository.delete(lesson);
         compactOrders(lesson.getCourseId());
     }
@@ -126,8 +128,8 @@ public class LessonService implements LessonAccessPolicy, LessonSourceTextProvid
         validateDocument(file);
         String extractedText = textExtractor.extract(file);
         String storageKey = documentStorage.store(file);
-        try {
-            LessonDocument document = LessonDocument.builder()
+        documentCleanup.afterRollback(storageKey);
+        LessonDocument document = LessonDocument.builder()
                 .lessonId(lessonId)
                 .uploadedBy(userId)
                 .originalName(safeOriginalName(file))
@@ -137,11 +139,7 @@ public class LessonService implements LessonAccessPolicy, LessonSourceTextProvid
                 .extractedText(extractedText)
                 .contentHash(sha256(file))
                 .build();
-            return toDocumentResponse(documentRepository.save(document));
-        } catch (RuntimeException exception) {
-            documentStorage.delete(storageKey);
-            throw exception;
-        }
+        return toDocumentResponse(documentRepository.save(document));
     }
 
     @Transactional(readOnly = true)
@@ -157,7 +155,7 @@ public class LessonService implements LessonAccessPolicy, LessonSourceTextProvid
         LessonDocument document = documentRepository.findById(documentId)
             .orElseThrow(() -> new ApiException(ErrorCode.NOT_FOUND, "Document not found"));
         requireManage(document.getLessonId(), userId);
-        documentStorage.delete(document.getStorageKey());
+        documentCleanup.afterCommit(document.getStorageKey());
         documentRepository.delete(document);
     }
 

@@ -29,12 +29,13 @@ class LessonServiceTest {
     @Mock UserRepository userRepository;
     @Mock DocumentStorage documentStorage;
     @Mock DocumentTextExtractor textExtractor;
+    @Mock(mockMaker = org.mockito.MockMakers.SUBCLASS) DocumentCleanupService documentCleanup;
 
     LessonService service;
 
     @BeforeEach
     void setUp() {
-        service = new LessonService(lessonRepository, documentRepository, userRepository, documentStorage, textExtractor);
+        service = new LessonService(lessonRepository, documentRepository, userRepository, documentStorage, textExtractor, documentCleanup);
     }
 
     @Test
@@ -96,6 +97,22 @@ class LessonServiceTest {
             () -> service.assertCanViewLesson(10L, 7L));
 
         assertEquals(ErrorCode.FORBIDDEN, exception.getErrorCode());
+    }
+
+    @Test
+    void deletingDocumentMustNotRemoveFileBeforeDatabaseCommit() {
+        when(documentRepository.findById(99L)).thenReturn(Optional.of(
+            LessonDocument.builder().id(99L).lessonId(10L).storageKey("safe.txt").build()));
+        when(lessonRepository.findById(10L)).thenReturn(Optional.of(lesson("text")));
+        when(userRepository.findById(7L)).thenReturn(Optional.of(user(UserRole.ADMIN)));
+        org.springframework.transaction.support.TransactionSynchronizationManager.initSynchronization();
+        org.springframework.transaction.support.TransactionSynchronizationManager.setActualTransactionActive(true);
+        try {
+            service.deleteDocument(99L, 7L);
+            org.mockito.Mockito.verify(documentStorage, org.mockito.Mockito.never()).delete("safe.txt");
+        } finally {
+            org.springframework.transaction.support.TransactionSynchronizationManager.clear();
+        }
     }
 
     private Lesson lesson(String transcript) {

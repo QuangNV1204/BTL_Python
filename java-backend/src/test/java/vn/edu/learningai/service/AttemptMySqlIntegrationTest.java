@@ -52,7 +52,7 @@ class AttemptMySqlIntegrationTest {
     static void database(DynamicPropertyRegistry properties) {
         properties.add("spring.datasource.url", () -> System.getenv("QUIZ_TEST_MYSQL_URL"));
         properties.add("spring.datasource.username", () -> System.getenv("QUIZ_TEST_MYSQL_USERNAME"));
-        properties.add("spring.datasource.password", () -> System.getenv("QUIZ_TEST_MYSQL_PASSWORD"));
+        properties.add("spring.datasource.password", () -> System.getenv().getOrDefault("QUIZ_TEST_MYSQL_PASSWORD", ""));
         properties.add("spring.jpa.show-sql", () -> false);
         properties.add("jwt.jwt-signing-key", () -> Base64.getEncoder().encodeToString(new byte[32]));
     }

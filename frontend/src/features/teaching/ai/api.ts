@@ -62,8 +62,10 @@ export interface QuestionWrite {
   generation_id: string
 }
 
-export const getDocuments = (lessonId: string) =>
-  apiGet<Page<Document>>(`/lessons/${lessonId}/documents`)
+export const getDocuments = async (lessonId: string): Promise<Page<Document>> => {
+  const items = await apiGet<Document[]>(`/lessons/${lessonId}/documents`)
+  return { items, page: 1, page_size: Math.max(items.length, 1), total: items.length }
+}
 
 export const getFlashcards = (lessonId: string, page: number, pageSize = 100) =>
   apiGet<Page<Flashcard>>(`/lessons/${lessonId}/flashcards`, {

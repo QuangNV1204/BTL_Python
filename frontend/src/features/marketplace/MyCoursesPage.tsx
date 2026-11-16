@@ -1,3 +1,4 @@
+import { StartLearningButton } from '../learning/StartLearningButton'
 import { useQuery } from '@tanstack/react-query'
 import { Button, Card, Col, Input, Pagination, Row, Space, Tag, Typography } from 'antd'
 import { useState } from 'react'
@@ -90,11 +91,7 @@ export function MyCoursesPage() {
                     <Typography.Text type="secondary" style={{ fontSize: 13 }}>
                       Ghi danh {formatDate(course.enrolledAt)}
                     </Typography.Text>
-                    <Link to={paths.learnLesson(course.id, course.outline[0]?.id ?? '')}>
-                      <Button type="primary" size="small">
-                        Vào học
-                      </Button>
-                    </Link>
+                    <StartLearningButton courseId={course.id} size="small" />
                   </div>
                 </Card>
               </Col>

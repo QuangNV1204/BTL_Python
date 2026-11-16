@@ -55,7 +55,7 @@ class QuizMySqlIntegrationTest {
     static void database(DynamicPropertyRegistry properties) {
         properties.add("spring.datasource.url", () -> System.getenv("QUIZ_TEST_MYSQL_URL"));
         properties.add("spring.datasource.username", () -> System.getenv("QUIZ_TEST_MYSQL_USERNAME"));
-        properties.add("spring.datasource.password", () -> System.getenv("QUIZ_TEST_MYSQL_PASSWORD"));
+        properties.add("spring.datasource.password", () -> System.getenv().getOrDefault("QUIZ_TEST_MYSQL_PASSWORD", ""));
         properties.add("spring.jpa.show-sql", () -> false);
         properties.add("jwt.jwt-signing-key", () -> Base64.getEncoder().encodeToString(new byte[32]));
     }
@@ -123,6 +123,21 @@ class QuizMySqlIntegrationTest {
         assertThat(jdbc.sql("SELECT COUNT(*) FROM quizzes WHERE id=:id").param("id", quizId).query(Long.class).single()).isEqualTo(1);
         assertThatThrownBy(() -> jdbc.sql("DELETE FROM questions WHERE id=:id").param("id", Long.valueOf(question.id())).update())
             .isInstanceOf(org.springframework.dao.DataIntegrityViolationException.class);
+    }
+
+    @Test
+    void twoPhaseReorderPreservesQuestionIdsAndUniquePositions() {
+        var a = service.addQuestion(quizId, question("A"));
+        var b = service.addQuestion(quizId, new WriteQuestionRequest("B", null, 1, question("B").options(), null));
+        assertThatThrownBy(() -> service.replaceQuestion(Long.valueOf(b.id()), question("B")))
+            .isInstanceOf(ApiException.class);
+        service.replaceQuestion(Long.valueOf(a.id()), new WriteQuestionRequest("A", null, 3, question("A").options(), null));
+        service.replaceQuestion(Long.valueOf(b.id()), new WriteQuestionRequest("B", null, 4, question("B").options(), null));
+        service.replaceQuestion(Long.valueOf(b.id()), question("B"));
+        service.replaceQuestion(Long.valueOf(a.id()), new WriteQuestionRequest("A", null, 1, question("A").options(), null));
+        assertThat(jdbc.sql("SELECT id FROM questions WHERE quiz_id=:id ORDER BY order_index")
+            .param("id", quizId).query(Long.class).list())
+            .containsExactly(Long.valueOf(b.id()), Long.valueOf(a.id()));
     }
 
     @Test
