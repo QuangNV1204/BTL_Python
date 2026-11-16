@@ -4,6 +4,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { isApiError } from '../../../shared/api/client'
 import { EmptyState, ErrorState, LoadingState } from '../../../shared/components/PageState'
 import { Icon } from '../../../shared/components/Icon'
+import { formatDate } from '../../../shared/utils/format'
 import {
   createCard, deleteCard, getFlashcards, publishCard, updateCard, type Flashcard,
 } from './api'
@@ -237,7 +238,7 @@ export const FlashcardTable = forwardRef<FlashcardTableHandle, FlashcardTablePro
                   {
                     title: 'Ngày tạo',
                     dataIndex: 'created_at',
-                    render: (value: string) => new Date(value).toLocaleDateString('vi-VN'),
+                    render: (value: string) => formatDate(value),
                   },
                   {
                     title: 'Thao tác',

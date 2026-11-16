@@ -5,6 +5,7 @@ import { useParams } from 'react-router'
 import { apiGet } from '../../../shared/api/client'
 import { ErrorState, LoadingState } from '../../../shared/components/PageState'
 import { usePageHeader } from '../../../shared/components/pageHeader'
+import { formatDateTime } from '../../../shared/utils/format'
 import { listOwnedCourses } from '../../marketplace/course.api'
 
 interface CourseStats {
@@ -43,7 +44,7 @@ export function CourseStatisticsPage() {
         { key: 'submitted', label: 'Lượt đã nộp', children: stats.data.submitted_attempts },
         { key: 'completed', label: 'Sinh viên hoàn thành', children: stats.data.completed_students },
         { key: 'rate', label: 'Tỷ lệ hoàn thành', children: `${stats.data.completion_rate}%` },
-        { key: 'time', label: 'Thời điểm thống kê (UTC)', children: stats.data.generated_at },
+        { key: 'time', label: 'Thời điểm thống kê (giờ Việt Nam)', children: formatDateTime(stats.data.generated_at) },
       ]} /><Typography.Paragraph type="secondary">Hoàn thành = đã nộp mọi quiz hiện đang xuất bản. Không có sinh viên hoặc quiz xuất bản: tỷ lệ 0%.</Typography.Paragraph></Card> : null}
   </Space>
 }
@@ -62,7 +63,7 @@ export function QuizStatisticsPage() {
       { key: 'submitted', label: 'Lượt đã nộp', children: data.submitted_attempts },
       { key: 'students', label: 'Sinh viên đã nộp', children: data.unique_students },
       { key: 'average', label: 'Điểm trung bình mọi lượt nộp', children: data.average_score ?? 'Chưa có lượt nộp' },
-      { key: 'time', label: 'Thời điểm thống kê (UTC)', children: data.generated_at },
+      { key: 'time', label: 'Thời điểm thống kê (giờ Việt Nam)', children: formatDateTime(data.generated_at) },
     ]} /></Card>
     <Card title="Điểm tốt nhất theo sinh viên"><Table rowKey="student_id" dataSource={data.best_scores}
       columns={[{ title: 'Mã sinh viên', dataIndex: 'student_id' }, { title: 'Điểm / 100', dataIndex: 'score' }]} /></Card>
@@ -84,6 +85,6 @@ export function SystemStatisticsPage() {
     { key: 'courses', label: 'Khóa học đang xuất bản', children: d.published_courses },
     { key: 'enrollments', label: 'Lượt ghi danh', children: d.enrollments },
     { key: 'attempts', label: 'Lượt đã nộp', children: d.submitted_attempts },
-    { key: 'time', label: 'Thời điểm thống kê (UTC)', children: d.generated_at },
+    { key: 'time', label: 'Thời điểm thống kê (giờ Việt Nam)', children: formatDateTime(d.generated_at) },
   ]} /></Card>
 }
