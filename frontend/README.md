@@ -115,7 +115,7 @@ Mỗi màn làm theo màn cùng tên trong `prototype.html` (cột Prototype: m�
 
 | Màn | Route | Prototype | Việc cần làm |
 |---|---|---|---|
-| Khám phá khóa học | `/explore` | `#explore` | Khối "Học gì hôm nay?", lọc theo danh mục, tìm kiếm (đọc `?q=` từ ô tìm trên header), lưới thẻ khóa học, phân trang, empty "Không tìm thấy khóa học" + Xóa bộ lọc. `GET /courses`, `GET /categories`. |
+| Khám phá khóa học | `/explore` | `#explore` | Khối "Học gì hôm nay?", lọc theo danh mục, tìm kiếm bằng ô ở góc phải phía trên danh sách (đọc `?q=`), lưới thẻ khóa học, phân trang, empty "Không tìm thấy khóa học" + Xóa bộ lọc. `GET /courses`, `GET /categories`. |
 | Chi tiết khóa học | `/courses/:courseId` | `#course` | Breadcrumb, Giới thiệu khóa học, Đề cương (outline); nút Ghi danh miễn phí (khách → `/login?redirect=`) hoặc Vào học. `GET /courses/{id}`, `POST /courses/{id}/enroll`. |
 | Khóa học của tôi | `/my-courses` | `#mycourses` | Danh sách đã ghi danh, nút Vào học → `/learn/:courseId/lessons/:lessonId`; 2 empty state ("Bạn chưa ghi danh khóa học nào" + Khám phá, "Không có khóa học khớp"). `GET /users/me/courses`. |
 | Khóa học giảng dạy (màn tổng quan của giảng viên) | `/teaching/courses` | `#teach` | Khối **Tổng quan** (thẻ số liệu), bảng **Khóa học của tôi** (Trạng thái, Bài học, Học viên, Cập nhật, thao tác Xuất bản / Gỡ xuất bản / Lưu trữ / Khôi phục thành Draft có modal xác nhận), khối **Học viên mới ghi danh**, nút Tạo khóa học. `GET /teaching/courses`, `POST /courses`, `PATCH /courses/{id}/publication`, `PATCH /courses/{id}/archive`. |

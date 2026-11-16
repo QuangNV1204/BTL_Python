@@ -36,7 +36,6 @@ export function TeacherRequestsPage() {
 
   return (
     <div className="account-page">
-      <p className="account-description">Xem lý do và lịch sử xét duyệt của sinh viên. Chọn một yêu cầu để duyệt hoặc từ chối.</p>
       <div className="account-toolbar">
         <div className="account-controls">
           <Select<TeacherRequestStatus | 'ALL'> aria-label="Trạng thái yêu cầu" value={status} disabled={isDeciding} options={[
@@ -52,7 +51,7 @@ export function TeacherRequestsPage() {
       </div>
       {query.isPending ? <LoadingState /> : query.isError ? <ErrorState error={query.error} onRetry={() => void query.refetch()} /> : (
         <div className="account-request-grid">
-          <Card title="Yêu cầu trở thành giảng viên">
+          <Card className="page-table-card" title="Yêu cầu trở thành giảng viên">
             <Table<TeacherRequest>
               rowKey="id"
               columns={columns}

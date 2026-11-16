@@ -45,7 +45,7 @@ export function CourseStatisticsPage() {
         { key: 'completed', label: 'Sinh viên hoàn thành', children: stats.data.completed_students },
         { key: 'rate', label: 'Tỷ lệ hoàn thành', children: `${stats.data.completion_rate}%` },
         { key: 'time', label: 'Thời điểm thống kê (giờ Việt Nam)', children: formatDateTime(stats.data.generated_at) },
-      ]} /><Typography.Paragraph type="secondary">Hoàn thành = đã nộp mọi quiz hiện đang xuất bản. Không có sinh viên hoặc quiz xuất bản: tỷ lệ 0%.</Typography.Paragraph></Card> : null}
+      ]} /></Card> : null}
   </Space>
 }
 

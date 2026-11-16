@@ -1,6 +1,6 @@
 import { StartLearningButton } from '../learning/StartLearningButton'
 import { useQuery } from '@tanstack/react-query'
-import { Button, Card, Col, Input, Pagination, Row, Space, Tag, Typography } from 'antd'
+import { Button, Card, Col, Input, Pagination, Row, Tag, Typography } from 'antd'
 import { useState } from 'react'
 import { Link } from 'react-router'
 import { EmptyState, ErrorState, LoadingState } from '../../shared/components/PageState'
@@ -41,7 +41,7 @@ export function MyCoursesPage() {
     )
   }
   return (
-    <Space orientation="vertical" size={20} style={{ width: '100%' }}>
+    <div className="page-stack page-fill">
       <Row gutter={[12, 12]} justify="space-between" align="middle">
         <Col>
           <Typography.Title level={3} style={{ margin: 0 }}>
@@ -49,7 +49,7 @@ export function MyCoursesPage() {
           </Typography.Title>
           <Typography.Text type="secondary">Sắp xếp theo ngày ghi danh, mới nhất trước.</Typography.Text>
         </Col>
-        <Col>
+        <Col className="page-search">
           <Input.Search
             allowClear
             placeholder="Tìm trong khóa của tôi"
@@ -98,17 +98,19 @@ export function MyCoursesPage() {
             ))}
           </Row>
           {filtered.length > PAGE_SIZE && (
-            <Pagination
-              align="center"
-              current={page}
-              pageSize={PAGE_SIZE}
-              total={filtered.length}
-              showSizeChanger={false}
-              onChange={setPage}
-            />
+            <div className="page-pagination">
+              <Pagination
+                align="center"
+                current={page}
+                pageSize={PAGE_SIZE}
+                total={filtered.length}
+                showSizeChanger={false}
+                onChange={setPage}
+              />
+            </div>
           )}
         </>
       )}
-    </Space>
+    </div>
   )
 }

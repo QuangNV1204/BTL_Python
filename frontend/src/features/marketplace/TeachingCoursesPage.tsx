@@ -185,16 +185,15 @@ export function TeachingCoursesPage() {
           <Typography.Title level={3} style={{ margin: 0 }}>
             Tổng quan
           </Typography.Title>
-          <Typography.Text type="secondary">Khóa học, học viên và bài nộp của bạn.</Typography.Text>
         </Col>
         <Col>{createButton}</Col>
       </Row>
       <Row gutter={[16, 16]}>
         <Col xs={24} md={8}>
           <Card>
-            <Statistic title="Khóa đã xuất bản" value={counts.Published} />
+            <Statistic title="Khóa đã xuất bản" value={counts.Published} formatter={(value) => `${value}/${all.length}`} />
             <Typography.Text type="secondary" style={{ fontSize: 12 }}>
-              trên {all.length} khóa · {counts.Draft} Draft, {counts.Archived} Archived
+              {counts.Draft} bản nháp · {counts.Archived} đã lưu trữ
             </Typography.Text>
           </Card>
         </Col>

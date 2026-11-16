@@ -77,8 +77,8 @@ export function UsersPage() {
 
   return (
     <div className="account-page">
-      <p className="account-description">Quản lý tài khoản và trạng thái truy cập. Vai trò Giảng viên được cấp qua yêu cầu ở mục Duyệt giảng viên.</p>
-      <Card>
+      <p className="account-description">Quản lý tài khoản và trạng thái truy cập.</p>
+      <Card className="page-table-card">
         <div className="account-toolbar">
           <h2>Tất cả người dùng</h2>
           <div className="account-controls">

@@ -1,6 +1,6 @@
 import { useMutation } from '@tanstack/react-query'
 import { App, Dropdown, type MenuProps } from 'antd'
-import { useState, type KeyboardEvent } from 'react'
+import { useState } from 'react'
 import { Link, Outlet, useLocation, useMatches, useNavigate } from 'react-router'
 import { ROLE_LABEL, useCurrentUser, type ViewerRole } from '../auth/currentUser'
 import { isApiError } from '../api/client'
@@ -155,22 +155,6 @@ function Sidebar() {
   )
 }
 
-function HeaderSearch() {
-  const navigate = useNavigate()
-  const [q, setQ] = useState('')
-  const onKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Enter') {
-      navigate(q.trim() ? `${paths.explore}?q=${encodeURIComponent(q.trim())}` : paths.explore)
-    }
-  }
-  return (
-    <label className="search">
-      <Icon name="search" />
-      <input value={q} onChange={(e) => setQ(e.target.value)} onKeyDown={onKeyDown} placeholder="Tìm khóa học…" aria-label="Tìm khóa học" />
-    </label>
-  )
-}
-
 function AccountMenu({ name, role }: { name: string; role: ViewerRole }) {
   const navigate = useNavigate()
   const { toggle } = useThemeMode()
@@ -286,7 +270,6 @@ export function AppLayout() {
               {crumbs && crumbs.length > 0 && <Breadcrumb crumbs={crumbs} />}
               <h1>{title}</h1>
             </div>
-            {handle?.search && <HeaderSearch />}
             {name && <AccountMenu name={name} role={role} />}
           </header>
           {tabs && <TabBar items={tabs} />}

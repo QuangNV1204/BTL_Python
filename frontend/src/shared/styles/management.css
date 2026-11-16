@@ -1,11 +1,12 @@
-.account-page{display:flex;flex-direction:column;gap:24px;min-width:0}
+.account-page{display:flex;flex:1;flex-direction:column;gap:24px;min-width:0}
 .account-page .ant-card,.account-page .ant-card-body{min-width:0}
 .account-description{margin:0;color:var(--text-2);max-width:800px}
 .account-toolbar{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:20px}
 .account-toolbar h2{margin:0;font-size:18px;font-weight:600}
-.account-controls{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.account-controls{display:flex;align-items:center;justify-content:flex-end;gap:12px;flex-wrap:wrap}
 .account-controls .ant-select{min-width:190px}
-.account-profile{width:100%;max-width:800px}
+.account-controls>.ant-input-search{order:1}
+.account-profile{width:100%;max-width:800px;margin-inline:auto}
 .account-identity{display:flex;align-items:center;gap:16px;flex-wrap:wrap}
 .account-identity-info{flex:1;min-width:0;overflow-wrap:anywhere}
 .account-identity-info h2{margin:0;font-size:18px}
@@ -18,7 +19,7 @@
 .account-person{display:flex;align-items:center;gap:12px;min-width:0}
 .account-person-info{min-width:0;overflow-wrap:anywhere}
 .account-person-info small{display:block;color:var(--text-2);margin-top:2px}
-.account-request-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(280px,380px);gap:24px;align-items:start}
+.account-request-grid{display:grid;flex:1;grid-template-columns:minmax(0,1fr) minmax(280px,380px);gap:24px;align-items:start}
 .account-request-grid>*{min-width:0}
 .account-selected-row>td{background:color-mix(in srgb,var(--primary) 10%,var(--surface))!important}
 .account-request-row{cursor:pointer}

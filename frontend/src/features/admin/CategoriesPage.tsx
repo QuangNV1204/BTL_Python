@@ -104,8 +104,7 @@ export function CategoriesPage() {
 
   return (
     <div className="account-page">
-      <p className="account-description">Danh mục giúp sinh viên lọc khóa học ở trang Khám phá. Giảng viên chọn danh mục khi tạo khóa học.</p>
-      <Card>
+      <Card className="page-table-card">
         <div className="account-toolbar">
           <h2>Tất cả danh mục</h2>
           <div className="account-controls">
@@ -118,6 +117,7 @@ export function CategoriesPage() {
             <Button type="primary" icon={<Icon name="plus" />} disabled={busy} onClick={() => openForm(null)}>Thêm danh mục</Button>
           </div>
         </div>
+        <p className="account-description">Chỉ xóa được danh mục không có khóa học nào đang dùng.</p>
         {query.isPending ? <LoadingState /> : query.isError ? <ErrorState error={query.error} onRetry={() => void query.refetch()} /> : (
           <Table<Category>
             rowKey="id"
@@ -133,7 +133,6 @@ export function CategoriesPage() {
             }}
           />
         )}
-        <p className="account-description">Chỉ xóa được danh mục không có khóa học nào đang dùng.</p>
       </Card>
       <Modal
         open={formOpen}

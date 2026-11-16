@@ -46,6 +46,7 @@ export function CourseStudentsPage() {
   ]
   return (
     <Card
+      className="page-table-card"
       title={`Học viên (${total})`}
       extra={
         <Input.Search
@@ -61,8 +62,12 @@ export function CourseStudentsPage() {
         <EmptyState description="Khóa học chưa có học viên nào. Học viên sẽ xuất hiện sau khi ghi danh." />
       ) : (
         <>
+          <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+            Danh sách không có email: chủ khóa chỉ cần biết ai đang học.
+          </Typography.Text>
           <Table<CourseMember>
             rowKey="studentId"
+            scroll={{ x: 500 }}
             columns={columns}
             dataSource={visible}
             pagination={{
@@ -74,9 +79,6 @@ export function CourseStudentsPage() {
             }}
             locale={{ emptyText: <EmptyState description="Không có học viên khớp tên đã nhập trong trang này." /> }}
           />
-          <Typography.Text type="secondary" style={{ fontSize: 12 }}>
-            Danh sách không có email: chủ khóa chỉ cần biết ai đang học.
-          </Typography.Text>
         </>
       )}
     </Card>

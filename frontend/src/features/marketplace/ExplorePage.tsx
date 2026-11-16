@@ -44,7 +44,7 @@ export function ExplorePage() {
   const total = coursesQuery.data?.total ?? 0
   const items = coursesQuery.data?.items ?? []
   return (
-    <Space orientation="vertical" size={20} style={{ width: '100%' }}>
+    <div className="page-stack page-fill">
       <div>
         <Typography.Title level={2} style={{ margin: 0 }}>
           Học gì hôm nay?
@@ -54,7 +54,7 @@ export function ExplorePage() {
         </Typography.Text>
       </div>
       <Row gutter={[12, 12]} align="middle" justify="space-between">
-        <Col flex="auto">
+        <Col flex="auto" style={{ minWidth: 0, overflowX: 'auto' }}>
           <Segmented
             value={categoryId ?? 'all'}
             onChange={(value) => updateParams({ category_id: value === 'all' ? undefined : String(value) })}
@@ -64,7 +64,7 @@ export function ExplorePage() {
             ]}
           />
         </Col>
-        <Col>
+        <Col className="page-search">
           <Space.Compact>
             <Input.Search
               allowClear
@@ -106,16 +106,18 @@ export function ExplorePage() {
               </Col>
             ))}
           </Row>
-          <Pagination
-            align="center"
-            current={page}
-            pageSize={PAGE_SIZE}
-            total={total}
-            showSizeChanger={false}
-            onChange={(nextPage) => updateParams({ page: String(nextPage) })}
-          />
+          <div className="page-pagination">
+            <Pagination
+              align="center"
+              current={page}
+              pageSize={PAGE_SIZE}
+              total={total}
+              showSizeChanger={false}
+              onChange={(nextPage) => updateParams({ page: String(nextPage) })}
+            />
+          </div>
         </>
       )}
-    </Space>
+    </div>
   )
 }

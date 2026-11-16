@@ -84,6 +84,7 @@ export function AdminCoursesPage() {
   ]
   return (
     <Card
+      className="page-table-card"
       title={
         <Space>
           <span>Tất cả khóa học</span>

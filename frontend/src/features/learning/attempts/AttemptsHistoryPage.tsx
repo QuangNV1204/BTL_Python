@@ -145,15 +145,10 @@ export function AttemptsHistoryPage() {
 
   return (
     <Card
+      className="page-table-card"
       title={
         <div>
           <span>Lịch sử làm bài ({total})</span>
-          <Typography.Paragraph
-            type="secondary"
-            style={{ marginBottom: 0, fontWeight: 'normal', fontSize: 13, whiteSpace: 'normal' }}
-          >
-            Theo dõi tất cả các bài quiz bạn đã tham gia và điểm số đạt được.
-          </Typography.Paragraph>
         </div>
       }
     >

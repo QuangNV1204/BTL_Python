@@ -109,7 +109,7 @@ export function AccountSecurity() {
       </Card>
       <Card title="Phiên đăng nhập">
         <div className="account-stack">
-          <p className="account-description">Thu hồi các phiên đăng nhập của tài khoản. Phiên ở trình duyệt khác có thể tiếp tục hoạt động tối đa 15 phút.</p>
+          <p className="account-description">Quyền truy cập ở các trình duyệt khác có thể còn hiệu lực tối đa 15 phút sau khi xác nhận. Khi hết hạn, bạn cần đăng nhập lại trên các trình duyệt đó.</p>
           <div className="account-actions">
             <Button danger disabled={pending} onClick={() => { logoutMutation.reset(); setConfirmLogout(true) }}>Đăng xuất tất cả phiên</Button>
           </div>
