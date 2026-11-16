@@ -19,6 +19,7 @@ erDiagram
   lessons ||--o{ quizzes : contains
   ai_generations o|--o{ quizzes : provenance
   quizzes ||--o{ questions : contains
+  quizzes ||--o{ quiz_draft_save_receipts : deduplicates_draft_saves
   ai_generations o|--o{ questions : provenance
   questions ||--o{ question_options : contains
   quizzes ||--o{ quiz_attempts : receives

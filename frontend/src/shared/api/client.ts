@@ -67,6 +67,7 @@ export interface RequestOptions {
   signal?: AbortSignal
   headers?: Record<string, string>
   auth?: boolean
+  retryAuth?: boolean
 }
 function buildUrl(path: string, query?: Query): string {
   const url = `${BASE_URL}${path.startsWith('/') ? path : `/${path}`}`
@@ -165,7 +166,7 @@ async function sendRequest<T>(method: string, path: string, options: RequestOpti
     const apiError = await toApiError(response)
     requireSessionGeneration(generation)
     if (response.status === 401 && token) {
-      if (!retried && refreshTokenHandler) {
+      if (!retried && options.retryAuth !== false && refreshTokenHandler) {
         try {
           if (accessTokenProvider() === token) {
             await refreshTokenHandler()
@@ -231,7 +232,7 @@ export async function apiGetBlob(path: string, options: Omit<RequestOptions, 'bo
     const apiError = await toApiError(response)
     requireSessionGeneration(generation)
     if (response.status === 401 && token) {
-      if (!retried && refreshTokenHandler) {
+      if (!retried && options.retryAuth !== false && refreshTokenHandler) {
         try {
           if (accessTokenProvider() === token) {
             await refreshTokenHandler()

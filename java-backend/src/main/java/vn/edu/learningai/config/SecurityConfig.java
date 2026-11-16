@@ -98,7 +98,7 @@ public class SecurityConfig {
                     "/api/v1/quizzes/*", "/api/v1/quizzes/*/publication",
                     "/api/v1/flashcards/*", "/api/v1/flashcards/*/publication")
                     .hasAnyRole("TEACHER", "ADMIN")
-                .requestMatchers(HttpMethod.PUT, "/api/v1/lessons/*", "/api/v1/questions/*")
+                .requestMatchers(HttpMethod.PUT, "/api/v1/lessons/*", "/api/v1/questions/*", "/api/v1/quizzes/*/draft")
                     .hasAnyRole("TEACHER", "ADMIN")
                 .requestMatchers(HttpMethod.DELETE,
                     "/api/v1/courses/*", "/api/v1/lessons/*", "/api/v1/documents/*",

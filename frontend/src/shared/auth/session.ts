@@ -149,20 +149,24 @@ export function changePassword(request: ChangePasswordRequest): Promise<void> {
 }
 
 export async function resetPassword(request: ResetPasswordRequest): Promise<void> {
-  const pendingSession = restorePromise ?? refreshPromise
-  await pendingSession?.catch(() => undefined)
-  await apiPost<void>('/auth/reset-password', request, { auth: false })
-  const remainingSession = restorePromise ?? refreshPromise
-  await remainingSession?.catch(() => undefined)
-  clearSession()
+  const generation = getSessionGeneration()
+  await queueCookieOperation(async () => {
+    requireSessionGeneration(generation)
+    await apiPost<void>('/auth/reset-password', request, { auth: false })
+    requireSessionGeneration(generation)
+    clearSession()
+  })
 }
 
 export async function logoutAll(): Promise<void> {
-  const pendingSession = restorePromise ?? refreshPromise
-  await pendingSession?.catch(() => undefined)
-  await apiPost<void>('/auth/logout-all')
-  await refreshPromise?.catch(() => undefined)
-  clearSession()
+  const generation = getSessionGeneration()
+  await queueCookieOperation(async () => {
+    requireSessionGeneration(generation)
+    // Do not refresh inside this queue: refresh uses the same queue and would deadlock.
+    await apiPost<void>('/auth/logout-all', undefined, { retryAuth: false })
+    requireSessionGeneration(generation)
+    clearSession()
+  })
 }
 
 setAccessTokenProvider(() => accessToken)

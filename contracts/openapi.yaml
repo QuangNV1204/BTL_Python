@@ -16,14 +16,44 @@ info:
     Enrolled students retain learning access when a course is unpublished or archived.
     Unknown and server-owned request fields are rejected with 400 VALIDATION_ERROR.
     Validation failures are 400 (not 422). State/unique conflicts are 409.
-    Content-creation POSTs must not be automatically retried; no idempotency endpoint or
-    idempotency-key guarantee is introduced by this contract.
+    Content-creation POSTs must not be automatically retried. Atomic draft PUT has its
+    own actor/quiz-scoped request_id receipt; this does not make other POSTs idempotent.
 security:
   - bearerAuth: []
 tags:
   - name: Quizzes
   - name: Attempts
 paths:
+  /api/v1/quizzes/{quiz_id}/draft:
+    parameters:
+      - $ref: '#/components/parameters/QuizId'
+    put:
+      tags: [Quizzes]
+      operationId: saveQuizDraftSnapshot
+      summary: Atomically replace a DRAFT quiz snapshot
+      description: |
+        O only. Locks quiz; title, question deletions/updates/creation, options and receipt
+        commit in one transaction. Question IDs omitted/null create new questions; IDs
+        provided must belong to this quiz. Questions absent from snapshot are deleted.
+        Array order must equal order_index 0..n-1. Existing AI provenance is retained.
+        request_id is scoped to quiz and current actor. Same key and canonical parsed
+        payload replays the stored response without writes (including after publication);
+        same key with changed payload returns 409. Ownership/active account checked before
+        replay. Different request_id is a new write, not optimistic multi-editor locking.
+        Receipts persist until quiz deletion; no automatic expiry. On uncertain network/5xx,
+        retry the exact payload/key, never generate a new key for that save.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/QuizDraftSave' }
+      responses:
+        '200': { $ref: '#/components/responses/QuizAuthor' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409': { $ref: '#/components/responses/Conflict' }
   /api/v1/statistics/courses/{course_id}:
     get:
       operationId: courseStatistics
@@ -620,6 +650,42 @@ components:
         content: { $ref: '#/components/schemas/OptionContent' }
         is_correct: { type: boolean }
         order_index: { $ref: '#/components/schemas/OrderIndex' }
+    QuizDraftSave:
+      type: object
+      additionalProperties: false
+      required: [request_id, title, questions]
+      properties:
+        request_id: { type: string, format: uuid }
+        title: { $ref: '#/components/schemas/Title' }
+        questions:
+          type: array
+          maxItems: 200
+          items: { $ref: '#/components/schemas/DraftQuestionWrite' }
+    DraftQuestionWrite:
+      type: object
+      additionalProperties: false
+      required: [content, explanation, order_index, options]
+      properties:
+        id:
+          oneOf:
+            - { $ref: '#/components/schemas/Id' }
+            - { type: 'null' }
+        content: { $ref: '#/components/schemas/QuestionContent' }
+        explanation: { $ref: '#/components/schemas/Explanation' }
+        order_index: { $ref: '#/components/schemas/OrderIndex' }
+        generation_id: { $ref: '#/components/schemas/GenerationId' }
+        options:
+          type: array
+          minItems: 2
+          maxItems: 6
+          items: { $ref: '#/components/schemas/OptionWrite' }
+          contains:
+            type: object
+            required: [is_correct]
+            properties:
+              is_correct: { const: true }
+          minContains: 1
+          maxContains: 1
     QuestionWrite:
       type: object
       additionalProperties: false

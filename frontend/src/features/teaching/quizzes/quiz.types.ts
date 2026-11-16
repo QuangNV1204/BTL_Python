@@ -67,7 +67,7 @@ export interface QuizUpdateRequest {
 
 export interface QuestionWriteRequest {
   content: string
-  explanation?: string
+  explanation?: string | null
   order_index: number
   options: {
     content: string

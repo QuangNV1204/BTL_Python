@@ -12,7 +12,6 @@ import vn.edu.learningai.exception.ErrorCode;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.StandardCopyOption;
 import java.util.UUID;
 
 @Service
@@ -24,14 +23,19 @@ public class LocalDocumentStorage implements DocumentStorage {
     }
 
     @Override
-    public String store(MultipartFile file) {
+    public String newKey(MultipartFile file) {
         String originalName = StringUtils.cleanPath(file.getOriginalFilename() == null ? "document" : file.getOriginalFilename());
         String extension = originalName.contains(".") ? originalName.substring(originalName.lastIndexOf('.')) : "";
-        String storageKey = UUID.randomUUID() + extension.toLowerCase();
+        return UUID.randomUUID() + extension.toLowerCase(java.util.Locale.ROOT);
+    }
+
+    @Override
+    public void store(String storageKey, MultipartFile file) {
         try {
             Files.createDirectories(storageRoot);
-            Files.copy(file.getInputStream(), resolve(storageKey), StandardCopyOption.REPLACE_EXISTING);
-            return storageKey;
+            try (var input = file.getInputStream()) {
+                Files.copy(input, resolve(storageKey));
+            }
         } catch (IOException exception) {
             throw new ApiException(ErrorCode.STORAGE_ERROR);
         }

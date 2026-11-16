@@ -27,7 +27,7 @@ import static org.assertj.core.api.Assertions.*;
 
 @SpringBootTest
 @Import(DocumentDeletionMySqlIntegrationTest.StorageConfig.class)
-@EnabledIfEnvironmentVariable(named="QUIZ_TEST_MYSQL_URL", matches="jdbc:mysql://[^/]+/learningai_quiz_test_documents(?:\\?.*)?")
+@EnabledIfEnvironmentVariable(named="QUIZ_TEST_MYSQL_URL", matches="jdbc:mysql://[^/]+/learningai_quiz_test_documents(?:_[A-Za-z0-9]+)?(?:\\?.*)?")
 @Sql("/test-fixtures.sql")
 class DocumentDeletionMySqlIntegrationTest {
     @TempDir static Path root;
@@ -52,7 +52,8 @@ class DocumentDeletionMySqlIntegrationTest {
         final LocalDocumentStorage delegate;
         boolean fail;
         TestStorage(Path path) { delegate = new LocalDocumentStorage(path.toString()); }
-        public String store(MultipartFile f) { return delegate.store(f); }
+        public String newKey(MultipartFile f) { return delegate.newKey(f); }
+        public void store(String k, MultipartFile f) { delegate.store(k, f); }
         public Resource load(String k) { return delegate.load(k); }
         public void delete(String k) {
             if (fail) throw new IllegalStateException("injected storage failure");
@@ -69,6 +70,68 @@ class DocumentDeletionMySqlIntegrationTest {
     private long docs(long id) {
         return jdbc.sql("SELECT COUNT(*) FROM lesson_documents WHERE id=:id").param("id",id).query(Long.class).single();
     }
+    @Test void failedStagingInsertNeverWritesFile() throws Exception {
+        long before;
+        try (var paths = Files.list(root)) { before = paths.count(); }
+        jdbc.sql("CREATE TRIGGER test_staging_failure BEFORE INSERT ON document_cleanup_jobs FOR EACH ROW SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT='injected staging DB failure'").update();
+        try {
+            assertThatThrownBy(this::upload).isInstanceOf(RuntimeException.class);
+            try (var paths = Files.list(root)) { assertThat(paths.count()).isEqualTo(before); }
+        } finally { jdbc.sql("DROP TRIGGER test_staging_failure").update(); }
+    }
+
+    @Test void abandonedUploadRecoversWithoutRollbackCallback() throws Exception {
+        var file = new MockMultipartFile("file", "orphan.txt", "text/plain", "orphan".getBytes());
+        String key = storage.newKey(file);
+        // Simulate durable intent + abandoned connection, with NO Spring completion callback.
+        jdbc.sql("INSERT INTO document_cleanup_jobs(storage_key,job_type) VALUES(:key,'STAGING')").param("key",key).update();
+        storage.store(key,file);
+        assertThat(root.resolve(key)).exists();
+        var restarted = new DocumentCleanupService(jdbc,storage,transactions);
+        restarted.retryPending();
+        assertThat(root.resolve(key)).doesNotExist();
+        assertThat(jdbc.sql("SELECT COUNT(*) FROM document_cleanup_jobs WHERE storage_key=:key")
+            .param("key",key).query(Long.class).single()).isEqualTo(1);
+        // DB transaction lost: delayed uploader resumes AFTER the first recovery sweep.
+        storage.store(key,file);
+        restarted.retryPending();
+        assertThat(root.resolve(key)).doesNotExist();
+    }
+
+    @Test void workerSkipsLiveUploadAndCommitAdoptsIt() throws Exception {
+        var staged = new java.util.concurrent.CountDownLatch(1);
+        var finish = new java.util.concurrent.CountDownLatch(1);
+        var key = new java.util.concurrent.atomic.AtomicReference<String>();
+        var pool = java.util.concurrent.Executors.newSingleThreadExecutor();
+        try {
+            var writer = pool.submit(() -> new TransactionTemplate(transactions).executeWithoutResult(s -> {
+                long id = upload();
+                key.set(key(id));
+                staged.countDown();
+                try {
+                    if (!finish.await(10,java.util.concurrent.TimeUnit.SECONDS)) throw new IllegalStateException("test timeout");
+                } catch (InterruptedException e) { Thread.currentThread().interrupt(); throw new IllegalStateException(e); }
+            }));
+            assertThat(staged.await(10,java.util.concurrent.TimeUnit.SECONDS)).isTrue();
+            org.junit.jupiter.api.Assertions.assertTimeoutPreemptively(java.time.Duration.ofSeconds(3), cleanup::retryPending);
+            assertThat(root.resolve(key.get())).exists();
+            finish.countDown();
+            writer.get(10,java.util.concurrent.TimeUnit.SECONDS);
+            cleanup.retryPending();
+            assertThat(root.resolve(key.get())).exists();
+            assertThat(jdbc.sql("SELECT COUNT(*) FROM document_cleanup_jobs WHERE storage_key=:key")
+                .param("key",key.get()).query(Long.class).single()).isZero();
+        } finally { finish.countDown(); pool.shutdownNow(); }
+    }
+
+    @Test void staleJobCannotDeleteCommittedDocument() {
+        long id=upload(); String key=key(id);
+        jdbc.sql("INSERT INTO document_cleanup_jobs(storage_key) VALUES(:key)").param("key",key).update();
+        cleanup.retryPending();
+        assertThat(root.resolve(key)).exists();
+        assertThat(docs(id)).isEqualTo(1);
+    }
+
     @Test void documentRollbackPreservesMetadataAndRealFile() {
         long id=upload(); String key=key(id);
         assertThatThrownBy(() -> new TransactionTemplate(transactions).executeWithoutResult(s -> {

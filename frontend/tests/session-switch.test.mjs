@@ -113,6 +113,48 @@ test('logout-login-logout keeps final logout intent', () => environment(async (c
   assert.equal(logouts, 2)
 }))
 
+for (const operation of ['logoutAll', 'resetPassword']) {
+  test(`${operation} waits for in-flight login cookie before invalidating it`, () => environment(async (c, s) => {
+    const pendingLogin = deferred(), started = deferred()
+    const calls = []
+    globalThis.fetch = async (url, options) => {
+      calls.push(url)
+      if (url.endsWith('/auth/login')) {
+        if (JSON.parse(options.body).email === 'A') return json({ access_token: 'A' })
+        started.resolve()
+        return pendingLogin.promise
+      }
+      if (url.endsWith('/users/me')) return json({ id: 'A', role: 'STUDENT' })
+      return new Response(null, { status: 204 })
+    }
+    await s.login({ email: 'A', password: 'test' })
+    const login = s.login({ email: 'B', password: 'test' })
+    const stale = assert.rejects(login, { name: 'AbortError' })
+    await started.promise
+    const endpoint = operation === 'logoutAll' ? '/auth/logout-all' : '/auth/reset-password'
+    const action = operation === 'logoutAll' ? s.logoutAll() : s.resetPassword({ token: 'test', new_password: 'test-only' })
+    await new Promise(setImmediate)
+    assert.equal(calls.some((url) => url.endsWith(endpoint)), false)
+    pendingLogin.resolve(json({ access_token: 'B' }))
+    await Promise.all([stale, action])
+    assert.equal(s.getSession().user, null)
+  }))
+}
+
+test('logout-all expired token fails without queue deadlock or refresh', () => environment(async (c, s) => {
+  let refreshes = 0
+  globalThis.fetch = async (url) => {
+    if (url.endsWith('/auth/login')) return json({ access_token: 'A' })
+    if (url.endsWith('/users/me')) return json({ id: 'A', role: 'STUDENT' })
+    if (url.endsWith('/auth/refresh')) refreshes++
+    return json({ code: 'UNAUTHENTICATED', message: 'expired' }, 401)
+  }
+  await s.login({ email: 'A', password: 'test' })
+  await assert.rejects(s.logoutAll(), /expired/)
+  assert.equal(refreshes, 0)
+  assert.equal(s.getSession().user, null)
+}))
+
 test('same-session failed refresh expires current session once', () => environment(async (c, s, cache) => {
   let expiredCalls = 0
   globalThis.fetch = async (url) => {

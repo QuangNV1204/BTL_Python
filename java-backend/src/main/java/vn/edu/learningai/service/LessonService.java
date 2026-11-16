@@ -127,8 +127,9 @@ public class LessonService implements LessonAccessPolicy, LessonSourceTextProvid
         requireManage(lessonId, userId);
         validateDocument(file);
         String extractedText = textExtractor.extract(file);
-        String storageKey = documentStorage.store(file);
-        documentCleanup.afterRollback(storageKey);
+        String storageKey = documentStorage.newKey(file);
+        documentCleanup.stageUpload(storageKey);
+        documentStorage.store(storageKey, file);
         LessonDocument document = LessonDocument.builder()
                 .lessonId(lessonId)
                 .uploadedBy(userId)
@@ -139,7 +140,9 @@ public class LessonService implements LessonAccessPolicy, LessonSourceTextProvid
                 .extractedText(extractedText)
                 .contentHash(sha256(file))
                 .build();
-        return toDocumentResponse(documentRepository.save(document));
+        var saved = documentRepository.saveAndFlush(document);
+        documentCleanup.adoptUpload(storageKey);
+        return toDocumentResponse(saved);
     }
 
     @Transactional(readOnly = true)

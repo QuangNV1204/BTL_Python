@@ -36,7 +36,8 @@ import {
   publishQuiz,
   quizKeys,
 } from './quiz.api'
-import { saveQuizDraft } from './saveQuizDraft'
+import { isApiError } from '../../../shared/api/client'
+import { createDraftSaver } from './saveQuizDraft'
 import type { QuizAuthorDetail, QuizOptionAuthor, QuizQuestionAuthor, QuizStatus } from './quiz.types'
 
 interface LocalQuestion extends Omit<QuizQuestionAuthor, 'options'> {
@@ -82,7 +83,9 @@ function QuizEditorForm({ quiz }: { quiz: QuizAuthorDetail }) {
   const { message, modal } = App.useApp()
 
   const [isSaving, setIsSaving] = useState(false)
-  const isReadOnly = quiz.status !== 'DRAFT' || isSaving
+  const [saveUncertain, setSaveUncertain] = useState(false)
+  const [saveDraft] = useState(() => createDraftSaver())
+  const isReadOnly = quiz.status !== 'DRAFT' || isSaving || saveUncertain
 
   const [title, setTitle] = useState(quiz.title)
   const [questions, setQuestions] = useState<LocalQuestion[]>(() =>
@@ -104,7 +107,6 @@ function QuizEditorForm({ quiz }: { quiz: QuizAuthorDetail }) {
           },
         ],
   )
-  const [deletedQuestionIds, setDeletedQuestionIds] = useState<string[]>([])
   const [isDirty, setIsDirty] = useState(false)
 
   // Cảnh báo khi người dùng rời trang lúc chưa lưu
@@ -159,23 +161,25 @@ function QuizEditorForm({ quiz }: { quiz: QuizAuthorDetail }) {
   const saveMutation = useMutation({
     mutationFn: async () => {
       setIsSaving(true)
-      try {
-        await saveQuizDraft(quiz.id, title, questions, deletedQuestionIds,
-          (index, saved) => setQuestions((previous) => previous.map((q, i) =>
-            i === index ? { ...saved, isNew: false } : q)),
-          (id) => setDeletedQuestionIds((previous) => previous.filter((value) => value !== id)))
-      } finally {
-        setIsSaving(false)
-      }
+      return await saveDraft(quiz.id, title, questions)
     },
-    onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: quizKeys.detail(quiz.id) })
+    onSuccess: async (saved) => {
+      setTitle(saved.title)
+      setQuestions(saved.questions.map((q) => ({ ...q, isNew: false })))
+      queryClient.setQueryData(quizKeys.detail(quiz.id), saved)
       await queryClient.invalidateQueries({ queryKey: quizKeys.lesson(quiz.lessonId) })
+      setSaveUncertain(false)
       setIsDirty(false)
-      setDeletedQuestionIds([])
       void message.success('Đã lưu nội dung quiz thành công.')
     },
-    onError: (error: Error) => void message.error(error.message),
+    onSettled: () => setIsSaving(false),
+    onError: (error: Error) => {
+      const uncertain = !(isApiError(error) && error.status >= 400 && error.status < 500)
+      setSaveUncertain(uncertain)
+      void message.error(uncertain
+        ? 'Chưa xác nhận được kết quả lưu. Bấm Lưu nháp để gửi lại đúng lần lưu, không tạo trùng.'
+        : error.message)
+    },
   })
 
   // Mutation xuất bản
@@ -242,7 +246,6 @@ function QuizEditorForm({ quiz }: { quiz: QuizAuthorDetail }) {
   }
 
   const handleDeleteQuestion = (index: number) => {
-    const target = questions[index]
     modal.confirm({
       title: `Xóa câu ${index + 1}?`,
       content: 'Nội dung câu hỏi này sẽ bị xóa khỏi bản nháp.',
@@ -250,9 +253,6 @@ function QuizEditorForm({ quiz }: { quiz: QuizAuthorDetail }) {
       okButtonProps: { danger: true },
       cancelText: 'Hủy',
       onOk: () => {
-        if (target.id && !target.isNew) {
-          setDeletedQuestionIds((prev) => [...prev, target.id!])
-        }
         setQuestions((prev) => prev.filter((_, i) => i !== index))
         setIsDirty(true)
       },
@@ -629,7 +629,7 @@ function QuizEditorForm({ quiz }: { quiz: QuizAuthorDetail }) {
                   <Button
                     type="primary"
                     block
-                    disabled={!validation.canPublish || publishMutation.isPending || saveMutation.isPending}
+                    disabled={!validation.canPublish || publishMutation.isPending || saveMutation.isPending || saveUncertain}
                     loading={publishMutation.isPending}
                     onClick={handleConfirmPublish}
                   >

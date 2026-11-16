@@ -142,6 +142,12 @@ export async function updateQuiz(quizId: Id, data: QuizUpdateRequest): Promise<Q
   return mapQuizAuthor(wire)
 }
 
+export async function saveDraftSnapshot(quizId: Id, data: {
+  request_id: string; title: string; questions: (QuestionWriteRequest & { id?: string })[]
+}): Promise<QuizAuthorDetail> {
+  return mapQuizAuthor(await apiPut<QuizAuthorWire>(`/quizzes/${quizId}/draft`, data))
+}
+
 export async function deleteQuiz(quizId: Id): Promise<void> {
   await apiDelete(`/quizzes/${quizId}`)
 }

@@ -42,6 +42,7 @@ import static org.junit.jupiter.api.Assertions.assertTimeoutPreemptively;
     matches = "jdbc:mysql://[^/]+/learningai_quiz_test(?:_[A-Za-z0-9]+)?(?:\\?.*)?")
 class QuizMySqlIntegrationTest {
     @Autowired QuizService service;
+    @Autowired QuizDraftSaveService draftSaves;
     @Autowired QuizRepository quizzes;
     @Autowired JdbcClient jdbc;
     @Autowired PlatformTransactionManager transactions;
@@ -123,6 +124,83 @@ class QuizMySqlIntegrationTest {
         assertThat(jdbc.sql("SELECT COUNT(*) FROM quizzes WHERE id=:id").param("id", quizId).query(Long.class).single()).isEqualTo(1);
         assertThatThrownBy(() -> jdbc.sql("DELETE FROM questions WHERE id=:id").param("id", Long.valueOf(question.id())).update())
             .isInstanceOf(org.springframework.dao.DataIntegrityViolationException.class);
+    }
+
+    private vn.edu.learningai.dto.request.SaveQuizDraftRequest snapshot(String key, String title) {
+        return new vn.edu.learningai.dto.request.SaveQuizDraftRequest(key,title,List.of(
+            new vn.edu.learningai.dto.request.SaveQuizDraftRequest.Item(null,question("New question"))));
+    }
+
+    @Test
+    void atomicSnapshotReplayReturnsSameIdsAndRejectsChangedPayload() {
+        String key=UUID.randomUUID().toString();
+        var request=snapshot(key,"Saved title");
+        var saved=draftSaves.save(quizId,request);
+        var replay=draftSaves.save(quizId,request);
+        assertThat(replay).isEqualTo(saved);
+        assertThat(jdbc.sql("SELECT COUNT(*) FROM questions WHERE quiz_id=:id").param("id",quizId).query(Long.class).single()).isEqualTo(1);
+        assertThatThrownBy(() -> draftSaves.save(quizId,snapshot(key,"Different"))).isInstanceOf(ApiException.class);
+        assertThat(quizzes.findById(quizId).orElseThrow().getTitle()).isEqualTo("Saved title");
+    }
+
+    @Test
+    void atomicSnapshotKeepsExistingQuestionIdsWhenReorderingAndDeleting() {
+        var a=service.addQuestion(quizId,question("A"));
+        var b=service.addQuestion(quizId,new WriteQuestionRequest("B",null,1,question("B").options(),null));
+        var request=new vn.edu.learningai.dto.request.SaveQuizDraftRequest(UUID.randomUUID().toString(),"Reordered",List.of(
+            new vn.edu.learningai.dto.request.SaveQuizDraftRequest.Item(Long.valueOf(b.id()),question("B updated")),
+            new vn.edu.learningai.dto.request.SaveQuizDraftRequest.Item(Long.valueOf(a.id()),new WriteQuestionRequest("A",null,1,question("A").options(),null))));
+        var result=draftSaves.save(quizId,request);
+        assertThat(result.questions()).extracting(q->q.id()).containsExactly(b.id(),a.id());
+        var deleted=new vn.edu.learningai.dto.request.SaveQuizDraftRequest(UUID.randomUUID().toString(),"Removed",List.of(
+            new vn.edu.learningai.dto.request.SaveQuizDraftRequest.Item(Long.valueOf(a.id()),question("A"))));
+        assertThat(draftSaves.save(quizId,deleted).questions()).extracting(q->q.id()).containsExactly(a.id());
+    }
+
+    @Test
+    void snapshotReplayDoesNotRestoreOldSnapshotAfterNewSave() {
+        var old=snapshot(UUID.randomUUID().toString(),"Old");
+        draftSaves.save(quizId,old);
+        draftSaves.save(quizId,snapshot(UUID.randomUUID().toString(),"New"));
+        assertThat(draftSaves.save(quizId,old).title()).isEqualTo("Old");
+        assertThat(quizzes.findById(quizId).orElseThrow().getTitle()).isEqualTo("New");
+    }
+
+    @Test
+    void snapshotFailureRollsBackTitleQuestionsAndReceipt() {
+        var original=service.addQuestion(quizId,question("Original"));
+        jdbc.sql("CREATE TRIGGER test_snapshot_fail BEFORE INSERT ON question_options FOR EACH ROW SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT='injected option write failure'").update();
+        try {
+            assertThatThrownBy(() -> draftSaves.save(quizId,snapshot(UUID.randomUUID().toString(),"Must rollback")))
+                .isInstanceOf(RuntimeException.class);
+            assertThat(quizzes.findById(quizId).orElseThrow().getTitle()).isEqualTo("Quiz");
+            assertThat(jdbc.sql("SELECT id FROM questions WHERE quiz_id=:id").param("id",quizId).query(Long.class).list())
+                .containsExactly(Long.valueOf(original.id()));
+            assertThat(jdbc.sql("SELECT COUNT(*) FROM quiz_draft_save_receipts WHERE quiz_id=:id").param("id",quizId).query(Long.class).single()).isZero();
+        } finally { jdbc.sql("DROP TRIGGER test_snapshot_fail").update(); }
+    }
+
+    @Test
+    void concurrentSnapshotRetryCreatesExactlyOneQuestion() throws Exception {
+        var request=snapshot(UUID.randomUUID().toString(),"Concurrent");
+        var pool=Executors.newFixedThreadPool(2);
+        try {
+            var one=pool.submit(() -> { authenticate(); try { return draftSaves.save(quizId,request); } finally { SecurityContextHolder.clearContext(); } });
+            var two=pool.submit(() -> { authenticate(); try { return draftSaves.save(quizId,request); } finally { SecurityContextHolder.clearContext(); } });
+            assertThat(one.get(15,TimeUnit.SECONDS)).isEqualTo(two.get(15,TimeUnit.SECONDS));
+            assertThat(jdbc.sql("SELECT COUNT(*) FROM questions WHERE quiz_id=:id").param("id",quizId).query(Long.class).single()).isEqualTo(1);
+        } finally { pool.shutdownNow(); }
+    }
+
+    @Test
+    void snapshotCannotModifyPublishedQuizOrUseForeignQuestion() {
+        var request=snapshot(UUID.randomUUID().toString(),"Published");
+        var foreign=new vn.edu.learningai.dto.request.SaveQuizDraftRequest(UUID.randomUUID().toString(),"Foreign",List.of(
+            new vn.edu.learningai.dto.request.SaveQuizDraftRequest.Item(Long.MAX_VALUE,question("Foreign"))));
+        assertThatThrownBy(() -> draftSaves.save(quizId,foreign)).isInstanceOf(ApiException.class);
+        service.addQuestion(quizId,question("Original"));
+        service.changePublication(quizId,new QuizPublicationRequest(QuizStatus.PUBLISHED));
+        assertThatThrownBy(() -> draftSaves.save(quizId,request)).isInstanceOf(ApiException.class);
     }
 
     @Test

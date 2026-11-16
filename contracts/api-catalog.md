@@ -52,6 +52,7 @@ Mọi route có prefix `/api/v1`. A=ADMIN, T=TEACHER, S=STUDENT, U=user active �
 | QUIZ-01 | POST /lessons/{lesson_id}/quizzes | O | QuizWrite → QuizAuthor (201) |
 | QUIZ-01 | GET /quizzes/{quiz_id} | O/E | O: QuizAuthor; E: QuizStudent |
 | QUIZ-01 | PATCH /quizzes/{quiz_id} | O | QuizWrite → QuizAuthor; Draft |
+| QUIZ-01 | PUT /quizzes/{quiz_id}/draft | O | QuizDraftSave snapshot → QuizAuthor; atomic Draft save, request_id replay scoped actor/quiz; changed payload same key 409 |
 | QUIZ-01 | DELETE /quizzes/{quiz_id} | O | 204; Draft |
 | QUIZ-01 | POST /quizzes/{quiz_id}/questions | O | QuestionWrite → QuestionAuthor (201) |
 | QUIZ-01 | PUT /questions/{question_id} | O | QuestionWrite → QuestionAuthor; Draft |
