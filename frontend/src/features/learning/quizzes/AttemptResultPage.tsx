@@ -15,6 +15,7 @@ import {
   Space,
   Tag,
   Typography,
+  theme,
 } from 'antd'
 import { useState } from 'react'
 import { useNavigate, useParams } from 'react-router'
@@ -26,6 +27,7 @@ import { attemptKeys, getAttemptDetail } from '../attempts/attempts.api'
 export function AttemptResultPage() {
   const { attemptId = '' } = useParams()
   const navigate = useNavigate()
+  const { token } = theme.useToken()
 
   const [filterMode, setFilterMode] = useState<'all' | 'wrong'>('all')
 
@@ -69,9 +71,9 @@ export function AttemptResultPage() {
   const wrongReviews = reviews.filter((r) => !r.isCorrect)
   const displayedReviews = filterMode === 'wrong' ? wrongReviews : reviews
 
-  let scoreColor = '#ff4d4f'
-  if (isGreat) scoreColor = '#52c41a'
-  else if (isPassed) scoreColor = '#faad14'
+  let scoreColor = token.colorError
+  if (isGreat) scoreColor = token.colorSuccess
+  else if (isPassed) scoreColor = token.colorWarning
 
   return (
     <Space orientation="vertical" size={24} style={{ width: '100%' }}>
@@ -88,7 +90,7 @@ export function AttemptResultPage() {
                   <div style={{ fontSize: 28, fontWeight: 700, color: scoreColor }}>
                     {score}
                   </div>
-                  <div style={{ fontSize: 13, color: 'rgba(0,0,0,0.45)' }}>Điểm</div>
+                  <div style={{ fontSize: 13, color: token.colorTextSecondary }}>Điểm</div>
                 </div>
               )}
             />
@@ -147,7 +149,7 @@ export function AttemptResultPage() {
         }
       >
         {displayedReviews.length === 0 ? (
-          <div style={{ padding: '32px 0', textAlign: 'center', color: 'rgba(0,0,0,0.45)' }}>
+          <div style={{ padding: '32px 0', textAlign: 'center', color: token.colorTextSecondary }}>
             Không có câu sai nào trong bài làm!
           </div>
         ) : (
@@ -180,20 +182,20 @@ export function AttemptResultPage() {
                     const isSelected = opt.id === review.selectedOptionId
                     const isAnswerCorrect = opt.id === review.correctOptionId
 
-                    let bg = '#fafafa'
-                    let border = '#f0f0f0'
-                    let color = 'inherit'
+                    let bg = token.colorFillAlter
+                    let border = token.colorBorderSecondary
+                    let color = token.colorText
                     let label = ''
 
                     if (isAnswerCorrect) {
-                      bg = '#f6ffed'
-                      border = '#b7eb8f'
-                      color = '#389e0d'
+                      bg = token.colorSuccessBg
+                      border = token.colorSuccessBorder
+                      color = token.colorSuccessText
                       label = ' (Đáp án đúng)'
                     } else if (isSelected && !review.isCorrect) {
-                      bg = '#fff2f0'
-                      border = '#ffccc7'
-                      color = '#cf1322'
+                      bg = token.colorErrorBg
+                      border = token.colorErrorBorder
+                      color = token.colorErrorText
                       label = ' (Lựa chọn của bạn)'
                     }
 
@@ -227,11 +229,11 @@ export function AttemptResultPage() {
                     style={{
                       marginTop: 16,
                       padding: '10px 14px',
-                      background: '#f0f5ff',
+                      background: token.colorInfoBg,
                       borderRadius: 6,
-                      border: '1px solid #d6e4ff',
+                      border: `1px solid ${token.colorInfoBorder}`,
                       fontSize: 13,
-                      color: '#1d39c4',
+                      color: token.colorInfoText,
                     }}
                   >
                     <strong>Giải thích: </strong>

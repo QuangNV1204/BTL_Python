@@ -6,7 +6,7 @@ import {
   SendOutlined,
 } from '@ant-design/icons'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { Alert, App, Button, Card, Col, Progress, Radio, Row, Space, Tag, Typography } from 'antd'
+import { Alert, App, Button, Card, Col, Progress, Radio, Row, Space, Tag, Typography, theme } from 'antd'
 import { useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router'
 import { EmptyState, ErrorState, LoadingState } from '../../../shared/components/PageState'
@@ -21,6 +21,7 @@ export function TakeQuizPage() {
   const navigate = useNavigate()
   const queryClient = useQueryClient()
   const { modal, message } = App.useApp()
+  const { token } = theme.useToken()
 
   const quizQuery = useQuery({
     queryKey: [...quizKeys.detail(quizId), 'student'],
@@ -188,8 +189,9 @@ export function TakeQuizPage() {
                       style={{
                         padding: '14px 16px',
                         borderRadius: 8,
-                        border: `1.5px solid ${selected ? '#1677ff' : '#d9d9d9'}`,
-                        background: selected ? '#e6f4ff' : '#fff',
+                        border: `1.5px solid ${selected ? token.colorPrimary : token.colorBorder}`,
+                        background: selected ? token.colorPrimaryBg : token.colorBgContainer,
+                        color: token.colorText,
                         cursor: 'pointer',
                         display: 'flex',
                         alignItems: 'center',
@@ -206,7 +208,7 @@ export function TakeQuizPage() {
               </Space>
             </Radio.Group>
 
-            <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 32, paddingTop: 16, borderTop: '1px solid #f0f0f0' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 32, paddingTop: 16, borderTop: `1px solid ${token.colorSplit}` }}>
               <Button icon={<LeftOutlined />} disabled={currentIdx === 0} onClick={() => setCurrentIdx((index) => Math.max(0, index - 1))}>
                 Câu trước
               </Button>
@@ -230,16 +232,17 @@ export function TakeQuizPage() {
               return (
                 <Col span={4} key={question.id}>
                   <Button
-                    type={answered ? 'primary' : 'default'}
+                    type="default"
+                    aria-current={current ? 'step' : undefined}
                     onClick={() => setCurrentIdx(index)}
                     style={{
                       width: '100%',
                       padding: 0,
                       height: 38,
                       fontWeight: current ? 700 : 500,
-                      border: `2px solid ${current ? '#1677ff' : answered ? '#52c41a' : '#d9d9d9'}`,
-                      background: answered ? '#52c41a' : '#fff',
-                      color: answered ? '#fff' : 'inherit',
+                      border: `2px solid ${current ? token.colorPrimary : answered ? token.colorSuccessBorder : token.colorBorder}`,
+                      background: answered ? token.colorSuccessBg : token.colorBgContainer,
+                      color: answered ? token.colorSuccessText : token.colorText,
                     }}
                   >
                     {index + 1}

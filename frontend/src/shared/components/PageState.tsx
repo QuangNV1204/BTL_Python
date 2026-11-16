@@ -13,7 +13,7 @@ export function LoadingState({ tip = 'Đang tải…' }: { tip?: string }) {
   return (
     <div style={{ padding: 48, textAlign: 'center' }}>
       <Spin size="large" />
-      <div style={{ marginTop: 12, color: 'rgba(0,0,0,0.45)' }}>{tip}</div>
+      <div style={{ marginTop: 12, color: 'var(--text-3)' }}>{tip}</div>
     </div>
   )
 }

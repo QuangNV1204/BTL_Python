@@ -49,7 +49,7 @@ export function AttemptsHistoryPage() {
   }
 
   const scoreTag = (score?: number | null) => {
-    if (score == null) return <span style={{ color: 'rgba(0,0,0,0.25)' }}>—</span>
+    if (score == null) return <Typography.Text type="secondary">—</Typography.Text>
     let color = 'error'
     if (score >= 80) color = 'success'
     else if (score >= 50) color = 'warning'
@@ -86,7 +86,7 @@ export function AttemptsHistoryPage() {
     {
       title: 'Khóa học',
       dataIndex: 'courseTitle',
-      render: (title?: string) => title || <span style={{ color: 'rgba(0,0,0,0.25)' }}>—</span>,
+      render: (title?: string) => title || <Typography.Text type="secondary">—</Typography.Text>,
     },
     {
       title: 'Trạng thái',
@@ -150,7 +150,7 @@ export function AttemptsHistoryPage() {
           <span>Lịch sử làm bài ({total})</span>
           <Typography.Paragraph
             type="secondary"
-            style={{ marginBottom: 0, fontWeight: 'normal', fontSize: 13 }}
+            style={{ marginBottom: 0, fontWeight: 'normal', fontSize: 13, whiteSpace: 'normal' }}
           >
             Theo dõi tất cả các bài quiz bạn đã tham gia và điểm số đạt được.
           </Typography.Paragraph>
@@ -171,6 +171,7 @@ export function AttemptsHistoryPage() {
           rowKey="id"
           columns={columns}
           dataSource={items}
+          scroll={{ x: 'max-content' }}
           pagination={{
             current: page,
             pageSize: PAGE_SIZE,
