@@ -8,7 +8,7 @@ import { paths } from '../../../shared/routing/paths'
 import { formatDateTime } from '../../../shared/utils/format'
 import { getQuiz, quizKeys } from '../quizzes/quiz.api'
 import {
-  formatScore, getAllOwnedCourses, getCourseStats, getPublishedCourseQuizzes, getQuizStats, getSystemStats,
+  activeRoleBreakdown, formatScore, getAllOwnedCourses, getCourseStats, getPublishedCourseQuizzes, getQuizStats, getSystemStats,
 } from './statistics.api'
 import './statistics.css'
 
@@ -211,6 +211,7 @@ export function SystemStatisticsPage() {
   if (stats.isPending) return <LoadingState />
   if (stats.isError) return <ErrorState error={stats.error} onRetry={() => void stats.refetch()} />
   const data = stats.data
+  const roles = activeRoleBreakdown(data)
   const definitions = [
     { label: 'Tài khoản đang hoạt động', value: data.active_users, detail: 'Bao gồm tài khoản Admin', definition: 'Tất cả tài khoản có trạng thái hoạt động, gồm Học viên, Giảng viên và Admin.' },
     { label: 'Giảng viên', value: data.teachers, detail: 'Gồm cả tài khoản bị khóa', definition: 'Tất cả tài khoản có vai trò TEACHER, không lọc theo trạng thái hoạt động.' },
@@ -222,9 +223,26 @@ export function SystemStatisticsPage() {
     <UpdatedAt value={data.generated_at} />
     <StatsSummary items={definitions.map(item => ({ ...item, value: number(item.value) }))} />
     <Card>
-      <SectionHeading title="Phân bố vai trò" description="Chưa có dữ liệu phân tách người dùng đang hoạt động theo vai trò" />
-      <Alert type="info" showIcon title="Chưa thể hiển thị tỷ lệ Giảng viên / Học viên chính xác."
-        description="API hiện trả tổng tài khoản hoạt động (gồm Admin) và tổng giảng viên (gồm tài khoản bị khóa). Hai số này không cùng phạm vi, nên không thể trừ để suy ra số học viên hoặc vẽ biểu đồ tỷ lệ." />
+      <SectionHeading title="Giảng viên / Học viên" description="Phân bố tài khoản đang hoạt động · Không tính Admin hoặc tài khoản bị khóa" />
+      {!roles ? <Alert type="info" showIcon title="Backend chưa cung cấp dữ liệu phân bố vai trò."
+        description="Cần triển khai phiên bản API có active_teachers và active_students. Các số tổng phía trên vẫn được giữ nguyên." />
+        : roles.total === 0 ? <EmptyState description="Chưa có tài khoản Giảng viên hoặc Học viên đang hoạt động." />
+          : <>
+            <div className="statistics-completion">
+              <Tooltip title={`${number(roles.teachers)} giảng viên và ${number(roles.students)} học viên đang hoạt động`}>
+                <div role="img" aria-label={`Giảng viên ${formatScore(roles.teacherPercent)}%, học viên ${formatScore(100 - roles.teacherPercent)}%. Tổng ${roles.total} tài khoản đang hoạt động, không tính Admin.`}>
+                  <Progress type="circle" percent={roles.teacherPercent} size={168} strokeWidth={9}
+                    strokeColor="var(--statistics-chart)" trailColor="var(--neutral-soft)"
+                    format={() => <span className="statistics-circle-value">{number(roles.total)}<small>đang hoạt động</small></span>} />
+                </div>
+              </Tooltip>
+              <dl className="statistics-completion-counts">
+                <div><dt><i className="statistics-swatch" />Giảng viên</dt><dd>{number(roles.teachers)} · {formatScore(roles.teacherPercent)}%</dd></div>
+                <div><dt><i className="statistics-swatch statistics-swatch-rest" />Học viên</dt><dd>{number(roles.students)} · {formatScore(100 - roles.teacherPercent)}%</dd></div>
+              </dl>
+            </div>
+            <p className="statistics-note">Tỷ lệ được tính trên tổng Giảng viên và Học viên có trạng thái hoạt động. Thẻ “Tài khoản đang hoạt động” phía trên còn bao gồm Admin.</p>
+          </>}
     </Card>
     <Card>
       <SectionHeading title="Cách tính số liệu" description="Số liệu tổng tại thời điểm cập nhật, không chia theo thời gian" />

@@ -9,7 +9,7 @@ test('statistics pagination, bounded partial failures and null scores', async ()
     server: { middlewareMode: true, ws: false }, appType: 'custom' })
   const oldFetch = globalThis.fetch
   try {
-    const { collectPages, mapSettledBounded, getAllOwnedCourses, getPublishedCourseQuizzes, formatScore } =
+    const { collectPages, mapSettledBounded, getAllOwnedCourses, getPublishedCourseQuizzes, formatScore, activeRoleBreakdown } =
       await server.ssrLoadModule('/src/features/teaching/statistics/statistics.api.ts')
     const pages = []
     const items = await collectPages(async page => {
@@ -23,6 +23,11 @@ test('statistics pagination, bounded partial failures and null scores', async ()
     assert.equal(formatScore(null), '—')
     assert.equal(formatScore(0), '0')
     assert.equal(formatScore(75.25), '75,25')
+    assert.deepEqual(activeRoleBreakdown({ active_teachers: 1, active_students: 2 }), { teachers: 1, students: 2, total: 3, teacherPercent: 100 / 3 })
+    assert.deepEqual(activeRoleBreakdown({ active_teachers: 0, active_students: 0 }), { teachers: 0, students: 0, total: 0, teacherPercent: 0 })
+    assert.equal(activeRoleBreakdown({ active_teachers: 2, active_students: 0 }).teacherPercent, 100)
+    assert.equal(activeRoleBreakdown({ active_teachers: 0, active_students: 2 }).teacherPercent, 0)
+    for (const data of [{}, { active_teachers: 1 }, { active_teachers: -1, active_students: 2 }, { active_teachers: NaN, active_students: 2 }]) assert.equal(activeRoleBreakdown(data), null)
 
     let running = 0
     let maximum = 0

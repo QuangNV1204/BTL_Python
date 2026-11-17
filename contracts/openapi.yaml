@@ -571,10 +571,12 @@ components:
     SystemStatistics:
       type: object
       additionalProperties: false
-      required: [active_users, teachers, published_courses, enrollments, submitted_attempts, generated_at]
+      required: [active_users, teachers, active_teachers, active_students, published_courses, enrollments, submitted_attempts, generated_at]
       properties:
-        active_users: { type: integer, minimum: 0 }
-        teachers: { type: integer, minimum: 0 }
+        active_users: { type: integer, minimum: 0, description: All active users including ADMIN. }
+        teachers: { type: integer, minimum: 0, description: All TEACHER accounts including inactive accounts. }
+        active_teachers: { type: integer, minimum: 0, description: Active TEACHER accounts only. }
+        active_students: { type: integer, minimum: 0, description: Active STUDENT accounts only. }
         published_courses: { type: integer, minimum: 0 }
         enrollments: { type: integer, minimum: 0 }
         submitted_attempts: { type: integer, minimum: 0 }

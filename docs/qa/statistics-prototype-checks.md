@@ -2,18 +2,21 @@
 
 ## Scope
 
-Frontend-only change to course, quiz and system statistics, based on
-`docs/03-experience/prototype.html` and existing light/dark tokens. No API,
-backend, schema or production data changes.
+Dashboard changes to course, quiz and system statistics follow
+`docs/03-experience/prototype.html` and existing light/dark tokens. The initial
+UI commits did not change the backend. A subsequent Python API extension adds
+`active_teachers` and `active_students` without changing existing count semantics
+or database schema. No production data changes.
 
 - Course: four KPI tiles, completion circle and counts, course selector,
   published quiz table, partial error states and quiz detail navigation.
 - Quiz: three KPI tiles, top-five wrong-question bars and underlying data table,
   best-score table. Student IDs are labeled as IDs; no invented student names.
 - System: five KPI tiles and definitions matching current backend queries.
-  Role proportions are explicitly unavailable: `active_users` includes Admin,
-  whereas `teachers` includes inactive accounts. Subtracting these values would
-  not produce a valid active-student count.
+  Role proportions now use explicit active-only Teacher and Student counts,
+  excluding Admin. Existing `active_users` and `teachers` totals are preserved.
+  When an older backend omits the new fields, UI shows a deployment notice;
+  zero active Teacher/Student accounts produce an empty state rather than NaN.
 - Existing paginated endpoints are traversed instead of truncating at 100 items.
   Null average scores remain unavailable, not zero.
 
@@ -84,5 +87,26 @@ real HTTP endpoints. Mail/live AI were not exercised.
 The live run confirms local frontend/backend/database connectivity for these
 statistics paths. The deployed team environment, larger datasets, live error
 states, concurrent mutations and full-system E2E remain outside this evidence.
-System role proportions still require a compatible authorized data breakdown;
-the unavailable-data notice is not an API connectivity error.
+
+## Active role API fix
+
+Python now counts active users, all teachers, active teachers and active students
+in one SQL statement. The first two fields keep their previous meanings. Role
+percentages use `active_teachers + active_students`, excluding Admin and inactive
+accounts; no new database table or migration is needed. Contract/payload docs
+include the two fields. Java is not updated by this Python-scoped change.
+
+- Backend suite: 59 passed (54 previous plus five active-role/authorization cases),
+  using isolated SQLite. Cases include mixed active/inactive accounts, only one
+  role, no active Teacher/Student, and Admin-only access.
+- Frontend: 31 tests passed, including missing/zero/negative/invalid role fields,
+  percentages 0/100 and a mixed role ratio. Typecheck/lint/build passed.
+- OpenAPI validation passed.
+- Live MySQL SQL comparison: active_users=4, teachers=2, active_teachers=2,
+  active_students=1. API returned exactly those values.
+- Browser used actual form login/network/backend on light/dark at 1440px/375px.
+  All four cases showed Teacher 66.67 percent and Student 33.33 percent, no
+  horizontal overflow or uncaught page errors. No response mocking was used.
+
+The original 54-test report remains tied to baseline 513d20a. Do not retroactively
+replace that report's test count with 59 without updating its tested version.

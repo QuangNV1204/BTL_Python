@@ -24,6 +24,9 @@ export interface QuizStats {
 export interface SystemStats {
   active_users: number
   teachers: number
+  // Optional while an older backend is deployed; absent is not the same as zero.
+  active_teachers?: number
+  active_students?: number
   published_courses: number
   enrollments: number
   submitted_attempts: number
@@ -77,6 +80,16 @@ export async function getPublishedCourseQuizzes(courseId: string) {
     else errors.push({ lessonId: lessons[index].id, lessonTitle: lessons[index].title, error: result.reason })
   })
   return { quizzes, errors }
+}
+
+export function activeRoleBreakdown(data: Pick<SystemStats, 'active_teachers' | 'active_students'>) {
+  const teachers = data.active_teachers
+  const students = data.active_students
+  if (teachers == null || students == null || !Number.isSafeInteger(teachers) ||
+    !Number.isSafeInteger(students) || teachers < 0 || students < 0) return null
+  const total = teachers + students
+  if (!Number.isSafeInteger(total)) return null
+  return { teachers, students, total, teacherPercent: total ? teachers * 100 / total : 0 }
 }
 
 export function formatScore(score: number | null): string {
