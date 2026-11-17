@@ -571,7 +571,8 @@ components:
     SystemStatistics:
       type: object
       additionalProperties: false
-      required: [active_users, teachers, active_teachers, active_students, published_courses, enrollments, submitted_attempts, generated_at]
+      description: Active role fields are additive and optional during Java/Python compatibility; Python supplies them, while older backends may omit them. Missing values are not zero.
+      required: [active_users, teachers, published_courses, enrollments, submitted_attempts, generated_at]
       properties:
         active_users: { type: integer, minimum: 0, description: All active users including ADMIN. }
         teachers: { type: integer, minimum: 0, description: All TEACHER accounts including inactive accounts. }

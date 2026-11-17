@@ -1,5 +1,5 @@
-import type { CSSProperties, ReactNode } from 'react'
-import { useQueries, useQuery } from '@tanstack/react-query'
+import { useState, type CSSProperties, type ReactNode } from 'react'
+import { useQuery } from '@tanstack/react-query'
 import { Alert, Card, Progress, Select, Table, Tag, theme, Tooltip } from 'antd'
 import { Link, useParams, useSearchParams } from 'react-router'
 import { EmptyState, ErrorState, LoadingState } from '../../../shared/components/PageState'
@@ -8,7 +8,7 @@ import { paths } from '../../../shared/routing/paths'
 import { formatDateTime } from '../../../shared/utils/format'
 import { getQuiz, quizKeys } from '../quizzes/quiz.api'
 import {
-  activeRoleBreakdown, formatScore, getAllOwnedCourses, getCourseStats, getPublishedCourseQuizzes, getQuizStats, getSystemStats,
+  activeRoleBreakdown, formatScore, getAllOwnedCourses, getCourseResultQuizzes, getCourseStats, getQuizPageStats, getQuizStats, getSystemStats,
 } from './statistics.api'
 import './statistics.css'
 
@@ -40,11 +40,11 @@ function SectionHeading({ title, description }: { title: string; description?: s
 export function CourseStatisticsPage() {
   usePageHeader({ title: 'Thống kê khóa học' })
   const [params, setParams] = useSearchParams()
-  const courses = useQuery({ queryKey: ['statistics', 'courses', 'options'], queryFn: getAllOwnedCourses })
+  const courses = useQuery({ queryKey: ['statistics', 'courses', 'options'], queryFn: ({ signal }) => getAllOwnedCourses(signal), retry: false })
   const requested = params.get('course')
   const selected = courses.data?.find(course => course.id === requested)?.id ?? courses.data?.[0]?.id
   const stats = useQuery({ queryKey: ['statistics', 'course', selected], enabled: !!selected,
-    queryFn: () => getCourseStats(selected!) })
+    queryFn: ({ signal }) => getCourseStats(selected!, signal) })
   if (courses.isPending) return <LoadingState />
   if (courses.isError) return <ErrorState error={courses.error} onRetry={() => void courses.refetch()} />
   return <StatisticsLayout>
@@ -89,20 +89,29 @@ export function CourseStatisticsPage() {
               </div>
               <p className="statistics-note">Học viên hoàn thành khi đã nộp ít nhất một lần <b>mọi quiz đang xuất bản</b> của khóa ({number(stats.data.quiz_count)} quiz). Lượt nộp bài bao gồm cả quiz đã đóng.</p>
             </Card>
-            <PublishedQuizzes key={selected} courseId={selected} quizCount={stats.data.quiz_count} />
+            <CourseResultQuizzes key={selected} courseId={selected} quizCount={stats.data.quiz_count} />
           </>}
   </StatisticsLayout>
 }
 
-function PublishedQuizzes({ courseId, quizCount }: { courseId: string; quizCount: number }) {
-  const quizzes = useQuery({ queryKey: ['statistics', 'published-quizzes', courseId], queryFn: () => getPublishedCourseQuizzes(courseId) })
+function CourseResultQuizzes({ courseId, quizCount }: { courseId: string; quizCount: number }) {
+  const [page, setPage] = useState(1)
+  const pageSize = 10
+  const quizzes = useQuery({ queryKey: ['statistics', 'result-quizzes', courseId],
+    queryFn: ({ signal }) => getCourseResultQuizzes(courseId, signal), retry: false })
   const rows = quizzes.data?.quizzes ?? []
-  const aggregates = useQueries({ queries: rows.map(quiz => ({
-    queryKey: ['statistics', 'quiz', quiz.id], queryFn: () => getQuizStats(quiz.id),
-  })) })
-  const aggregateById = new Map(rows.map((quiz, index) => [quiz.id, aggregates[index]]))
+  const currentPage = Math.min(page, Math.max(1, Math.ceil(rows.length / pageSize)))
+  const visibleRows = rows.slice((currentPage - 1) * pageSize, currentPage * pageSize)
+  const aggregates = useQuery({
+    queryKey: ['statistics', 'quiz-page', courseId, currentPage, visibleRows.map(quiz => quiz.id)],
+    queryFn: ({ signal }) => getQuizPageStats(rows, currentPage, pageSize, signal),
+    enabled: visibleRows.length > 0,
+    retry: false,
+  })
+  const aggregateById = new Map(aggregates.data?.map(item => [item.quizId, item.result]))
+  const hasAggregateErrors = aggregates.data?.some(item => item.result.status === 'rejected')
   return <Card>
-    <SectionHeading title="Quiz của khóa" description={`${number(quizCount)} quiz đang xuất bản · Điểm trung bình trên thang 100, chỉ tính lượt đã nộp`} />
+    <SectionHeading title="Quiz của khóa" description={`${number(quizCount)} quiz đang xuất bản (tính hoàn thành) · Bảng gồm quiz đang xuất bản và đã đóng · Điểm / 100, chỉ tính lượt đã nộp`} />
     {quizzes.isPending ? <LoadingState tip="Đang tải quiz của khóa…" />
       : quizzes.isError ? <ErrorState error={quizzes.error} onRetry={() => void quizzes.refetch()} />
         : <>
@@ -110,30 +119,35 @@ function PublishedQuizzes({ courseId, quizCount }: { courseId: string; quizCount
             <p>Không tải được danh sách quiz của bài: <b>{failure.lessonTitle}</b>. Bảng bên dưới có thể chưa đầy đủ.</p>
             <ErrorState error={failure.error} onRetry={() => void quizzes.refetch()} />
           </div>)}
-          {aggregates.some(result => result.isError) && <Alert type="warning" showIcon title="Một số thống kê quiz chưa tải được. Dữ liệu lỗi không được tính là 0." />}
-          {!rows.length ? (!quizzes.data.errors.length && <EmptyState description="Chưa có quiz xuất bản. Xuất bản quiz trong bài học để xem thống kê tại đây."
+          {hasAggregateErrors && <Alert type="warning" showIcon title="Một số thống kê quiz chưa tải được. Dữ liệu lỗi không được tính là 0." />}
+          {aggregates.isError && <ErrorState error={aggregates.error} onRetry={() => void aggregates.refetch()} />}
+          {!rows.length ? (!quizzes.data.errors.length && <EmptyState description="Chưa có quiz đang xuất bản hoặc đã đóng. Xuất bản quiz trong bài học để xem thống kê tại đây."
             action={<Link to={paths.teachingCourseLessons(courseId)}>Quản lý bài học</Link>} />)
-            : <Table rowKey="id" dataSource={rows} scroll={{ x: 780 }} pagination={{ pageSize: 10, hideOnSinglePage: true, showSizeChanger: false }}
+            : <Table rowKey="id" dataSource={rows} scroll={{ x: 900 }} pagination={{
+              current: currentPage, pageSize, onChange: setPage, hideOnSinglePage: true, showSizeChanger: false,
+            }}
               columns={[
                 { title: 'Tên quiz', dataIndex: 'title', render: value => <strong>{value}</strong> },
                 { title: 'Bài học', dataIndex: 'lessonTitle' },
+                { title: 'Trạng thái', dataIndex: 'status', render: status => <Tag color={status === 'PUBLISHED' ? 'green' : 'default'}>{status === 'PUBLISHED' ? 'Đang xuất bản' : 'Đã đóng'}</Tag> },
                 { title: 'Lượt nộp', key: 'submitted', render: (_, row) => {
                   const result = aggregateById.get(row.id)
-                  return result?.isPending ? 'Đang tải…' : result?.isError
-                    ? <button className="statistics-retry" onClick={() => void result.refetch()}>Thử lại</button>
-                    : result?.data ? number(result.data.submitted_attempts) : '—'
+                  return aggregates.isPending ? 'Đang tải…' : result?.status === 'rejected' || aggregates.isError
+                    ? <button className="statistics-retry" disabled={aggregates.isFetching} onClick={() => void aggregates.refetch()}>Thử lại</button>
+                    : result?.status === 'fulfilled' ? number(result.value.submitted_attempts) : '—'
                 } },
                 { title: 'Điểm trung bình', key: 'average', render: (_, row) => {
                   const result = aggregateById.get(row.id)
-                  return result?.isPending ? 'Đang tải…' : result?.isError ? 'Không tải được' : formatScore(result?.data?.average_score ?? null)
+                  return aggregates.isPending ? 'Đang tải…' : result?.status === 'rejected' || aggregates.isError
+                    ? 'Không tải được' : formatScore(result?.status === 'fulfilled' ? result.value.average_score : null)
                 } },
                 { title: 'Hành động', key: 'action', render: (_, row) => <Link to={`${paths.quizStatistics(row.id)}?course=${encodeURIComponent(courseId)}`}>Xem chi tiết</Link> },
               ]} />}
-          {rows.map(quiz => {
+          {visibleRows.map(quiz => {
             const result = aggregateById.get(quiz.id)
-            return result?.isError ? <div className="statistics-partial-error" key={quiz.id}>
+            return result?.status === 'rejected' ? <div className="statistics-partial-error" key={quiz.id}>
               <p>Không tải được thống kê: <b>{quiz.title}</b>.</p>
-              <ErrorState error={result.error} onRetry={() => void result.refetch()} />
+              <ErrorState error={result.reason} onRetry={() => void aggregates.refetch()} />
             </div> : null
           })}
           {!!rows.length && <p className="statistics-note">—: chưa có điểm trung bình (không thay bằng 0). Mỗi quiz thống kê tất cả lượt đã nộp, không chỉ lượt tốt nhất.</p>}
@@ -146,8 +160,8 @@ export function QuizStatisticsPage() {
   const [params] = useSearchParams()
   const courseId = params.get('course')
   const back = courseId ? `${paths.teachingStatistics}?course=${encodeURIComponent(courseId)}` : paths.teachingStatistics
-  const stats = useQuery({ queryKey: ['statistics', 'quiz', quizId], queryFn: () => getQuizStats(quizId), enabled: !!quizId })
-  const detail = useQuery({ queryKey: quizKeys.detail(quizId), queryFn: () => getQuiz(quizId), enabled: !!quizId })
+  const stats = useQuery({ queryKey: ['statistics', 'quiz', quizId], queryFn: ({ signal }) => getQuizStats(quizId, signal), enabled: !!quizId })
+  const detail = useQuery({ queryKey: quizKeys.detail(quizId), queryFn: ({ signal }) => getQuiz(quizId, signal), enabled: !!quizId })
   usePageHeader({ title: detail.data?.title ?? 'Thống kê quiz', crumbs: [{ label: 'Thống kê khóa học', to: back }, { label: detail.data?.title ?? 'Thống kê quiz' }] })
   if (stats.isPending) return <LoadingState />
   if (stats.isError) return <ErrorState error={stats.error} onRetry={() => void stats.refetch()} />
@@ -207,7 +221,7 @@ export function QuizStatisticsPage() {
 
 export function SystemStatisticsPage() {
   usePageHeader({ title: 'Thống kê hệ thống' })
-  const stats = useQuery({ queryKey: ['statistics', 'system'], queryFn: getSystemStats })
+  const stats = useQuery({ queryKey: ['statistics', 'system'], queryFn: ({ signal }) => getSystemStats(signal) })
   if (stats.isPending) return <LoadingState />
   if (stats.isError) return <ErrorState error={stats.error} onRetry={() => void stats.refetch()} />
   const data = stats.data

@@ -32,48 +32,102 @@ export interface SystemStats {
   submitted_attempts: number
   generated_at: string
 }
-export interface PublishedQuizRow extends QuizSummaryItem { lessonTitle: string }
+export interface QuizResultRow extends QuizSummaryItem { lessonTitle: string }
 
-/** Follow server pagination, including a server-imposed page-size limit. */
-export async function collectPages<T>(fetchPage: (page: number) => Promise<Page<T>>): Promise<T[]> {
+function throwIfAborted(signal?: AbortSignal) {
+  if (signal?.aborted) {
+    if (signal.throwIfAborted) signal.throwIfAborted()
+    throw new DOMException('Đã hủy tải dữ liệu.', 'AbortError')
+  }
+}
+
+/** Follow stable server pagination, including a server-imposed page-size limit. */
+export async function collectPages<T>(fetchPage: (page: number) => Promise<Page<T>>, signal?: AbortSignal): Promise<T[]> {
   const items: T[] = []
+  const ids = new Set<string>()
+  let total: number | undefined
+  let pageSize: number | undefined
   let page = 1
   while (true) {
+    throwIfAborted(signal)
     const result = await fetchPage(page)
+    throwIfAborted(signal)
     if (result.page !== page) throw new Error('Phân trang không tiến lên. Vui lòng tải lại danh sách.')
+    total ??= result.total
+    pageSize ??= result.page_size
+    if (!Number.isSafeInteger(total) || total < 0 || !Number.isSafeInteger(pageSize) || pageSize <= 0 ||
+      result.total !== total || result.page_size !== pageSize ||
+      result.items.length !== Math.min(pageSize, total - items.length)) {
+      throw new Error('Danh sách đã thay đổi trong khi tải. Vui lòng thử lại.')
+    }
+    for (const item of result.items) {
+      if (item != null && typeof item === 'object' && 'id' in item && item.id != null) {
+        const id = String(item.id)
+        if (ids.has(id)) throw new Error('Danh sách đã thay đổi trong khi tải (trùng mã). Vui lòng thử lại.')
+        ids.add(id)
+      }
+    }
+    // Check non-progress before completion; a shrinking total must never hide missing rows.
+    if (!result.items.length && items.length < total) {
+      throw new Error('Danh sách đã thay đổi trong khi tải. Vui lòng thử lại.')
+    }
     items.push(...result.items)
-    if (items.length >= result.total) return items
-    if (!result.items.length) throw new Error('Danh sách đã thay đổi trong khi tải. Vui lòng thử lại.')
+    if (items.length === total) return items
     page += 1
   }
 }
 
-/** Keep independent failures visible without discarding successfully loaded rows. */
-export async function mapSettledBounded<T, R>(items: T[], work: (item: T) => Promise<R>, concurrency = 4) {
+/** Keep independent failures visible, but never turn cancellation into a partial failure. */
+export async function mapSettledBounded<T, R>(items: T[], work: (item: T) => Promise<R>, concurrency = 4, signal?: AbortSignal) {
+  throwIfAborted(signal)
   const results: PromiseSettledResult<R>[] = new Array(items.length)
   let next = 0
+  let cancelled = false
   await Promise.all(Array.from({ length: Math.min(Math.max(1, concurrency), items.length) }, async () => {
     while (next < items.length) {
+      throwIfAborted(signal)
+      if (cancelled) throw new DOMException('Đã hủy tải dữ liệu.', 'AbortError')
       const index = next++
-      try { results[index] = { status: 'fulfilled', value: await work(items[index]) } }
-      catch (reason) { results[index] = { status: 'rejected', reason } }
+      try {
+        const value = await work(items[index])
+        throwIfAborted(signal)
+        results[index] = { status: 'fulfilled', value }
+      } catch (reason) {
+        if (signal?.aborted || (reason instanceof Error && reason.name === 'AbortError')) {
+          cancelled = true
+          throwIfAborted(signal)
+          throw reason
+        }
+        results[index] = { status: 'rejected', reason }
+      }
     }
   }))
+  throwIfAborted(signal)
   return results
 }
 
-export const getAllOwnedCourses = () => collectPages(page => listOwnedCourses({ page, page_size: 100 }))
-export const getCourseStats = (id: string) => apiGet<CourseStats>(`/statistics/courses/${id}`)
-export const getQuizStats = (id: string) => apiGet<QuizStats>(`/statistics/quizzes/${id}`)
-export const getSystemStats = () => apiGet<SystemStats>('/statistics/system')
+export const getAllOwnedCourses = (signal?: AbortSignal) =>
+  collectPages(page => listOwnedCourses({ page, page_size: 100 }, signal), signal)
+export const getCourseStats = (id: string, signal?: AbortSignal) => apiGet<CourseStats>(`/statistics/courses/${id}`, { signal })
+export const getQuizStats = (id: string, signal?: AbortSignal) => apiGet<QuizStats>(`/statistics/quizzes/${id}`, { signal })
+export const getSystemStats = (signal?: AbortSignal) => apiGet<SystemStats>('/statistics/system', { signal })
 
-export async function getPublishedCourseQuizzes(courseId: string) {
-  const lessons = await getCourseLessons(courseId)
+/** Request only the visible page; results remain paired with IDs even after independent failures. */
+export async function getQuizPageStats(quizzes: Pick<QuizSummaryItem, 'id'>[], page: number, pageSize: number, signal?: AbortSignal) {
+  const visible = quizzes.slice((page - 1) * pageSize, page * pageSize)
+  const results = await mapSettledBounded(visible, quiz => getQuizStats(quiz.id, signal), 4, signal)
+  return visible.map((quiz, index) => ({ quizId: quiz.id, result: results[index] }))
+}
+
+export async function getCourseResultQuizzes(courseId: string, signal?: AbortSignal) {
+  throwIfAborted(signal)
+  const lessons = await getCourseLessons(courseId, signal)
   const results = await mapSettledBounded(lessons, async lesson => {
-    const quizzes = await collectPages(page => getLessonQuizzes(lesson.id, page, 100))
-    return quizzes.filter(quiz => quiz.status === 'PUBLISHED').map(quiz => ({ ...quiz, lessonTitle: lesson.title }))
-  })
-  const quizzes: PublishedQuizRow[] = []
+    const quizzes = await collectPages(page => getLessonQuizzes(lesson.id, page, 100, signal), signal)
+    return quizzes.filter(quiz => quiz.status === 'PUBLISHED' || quiz.status === 'CLOSED')
+      .map(quiz => ({ ...quiz, lessonTitle: lesson.title }))
+  }, 4, signal)
+  const quizzes: QuizResultRow[] = []
   const errors: { lessonId: string; lessonTitle: string; error: unknown }[] = []
   results.forEach((result, index) => {
     if (result.status === 'fulfilled') quizzes.push(...result.value)

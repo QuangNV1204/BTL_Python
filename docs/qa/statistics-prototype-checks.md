@@ -109,4 +109,40 @@ include the two fields. Java is not updated by this Python-scoped change.
   horizontal overflow or uncaught page errors. No response mocking was used.
 
 The original 54-test report remains tied to baseline 513d20a. Do not retroactively
-replace that report's test count with 59 without updating its tested version.
+replace that report's test count without updating its tested version.
+
+## PR review regressions
+
+The review follow-up fixes four P2 issues and cancellation scheduling (P3):
+
+- Only the current ten quiz rows request aggregates, with at most four active
+  requests. IDs stay paired with results, including independent failures.
+- Both PUBLISHED and CLOSED quizzes retain statistics navigation and status
+  labels; the completion metric still counts currently PUBLISHED quizzes only.
+- Active role additions are optional in the shared OpenAPI during compatibility.
+  Old Java responses and extended Python responses both validate; Python still
+  supplies the values. Missing values are not treated as zero.
+- Pagination checks stable totals/page sizes, progress, exact page counts and
+  duplicate IDs. Concurrent changes produce a retryable visible error instead
+  of a silently incomplete list. Offset pagination cannot detect every same-count
+  reorder without a server cursor/snapshot; this is not claimed as solved.
+- Query cancellation reaches fetch, pagination and bounded workers. Abandoned
+  queries stop scheduling new lessons/pages; AbortError is not a partial failure.
+
+Follow-up verification:
+
+- Backend: 60 passed on isolated SQLite, including shared compatibility regression.
+- Frontend: 32 passed; typecheck/lint/build passed (existing large-chunk warning).
+- OpenAPI validated; original Java-shaped and extended Python-shaped system
+  response fixtures both passed schema validation.
+- Browser fixture with 200 quizzes: only 10 aggregate calls on first page, 20
+  total after page two, CLOSED detail link present; desktop1440/mobile375 both
+  had no horizontal overflow or uncaught page errors. This is request-count UI
+  verification, not a production load test.
+- Repeated real browser login/reload/course/quiz/system smoke against local Python
+  and disposable MySQL passed with statistics HTTP200 and no page errors.
+- Independent static re-review confirmed all five reviewed findings addressed;
+  no additional actionable correctness issue was found in that bounded scope.
+
+No production database mutation, merge or deploy was performed. Deployment smoke
+and infrastructure checks remain the group's responsibility after review/merge.

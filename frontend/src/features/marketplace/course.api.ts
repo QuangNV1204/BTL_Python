@@ -159,9 +159,10 @@ export async function getMyCourses(params: PageParams): Promise<Page<EnrolledCou
     })),
   }
 }
-export async function listOwnedCourses(params: PageParams): Promise<Page<OwnedCourse>> {
+export async function listOwnedCourses(params: PageParams, signal?: AbortSignal): Promise<Page<OwnedCourse>> {
   const page = await apiGet<Page<OwnedCourseWire>>('/teaching/courses', {
     query: { page: params.page, page_size: params.page_size },
+    signal,
   })
   return { ...page, items: page.items.map(mapOwned) }
 }

@@ -9,7 +9,7 @@ test('statistics pagination, bounded partial failures and null scores', async ()
     server: { middlewareMode: true, ws: false }, appType: 'custom' })
   const oldFetch = globalThis.fetch
   try {
-    const { collectPages, mapSettledBounded, getAllOwnedCourses, getPublishedCourseQuizzes, formatScore, activeRoleBreakdown } =
+    const { collectPages, mapSettledBounded, getAllOwnedCourses, getCourseResultQuizzes, formatScore, activeRoleBreakdown } =
       await server.ssrLoadModule('/src/features/teaching/statistics/statistics.api.ts')
     const pages = []
     const items = await collectPages(async page => {
@@ -63,7 +63,7 @@ test('statistics pagination, bounded partial failures and null scores', async ()
     }
     const courses = await getAllOwnedCourses()
     assert.deepEqual(courses.map(course => course.id), ['1', '2'])
-    const result = await getPublishedCourseQuizzes('1')
+    const result = await getCourseResultQuizzes('1')
     assert.equal(result.quizzes.length, 1)
     assert.equal(result.quizzes[0].id, '2')
     assert.equal(result.quizzes[0].lessonTitle, 'Lesson A')
