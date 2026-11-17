@@ -139,11 +139,24 @@ class StatisticsService:
     def system(self, actor: AuthenticatedUser) -> dict:
         if actor.role is not UserRole.ADMIN:
             raise ApiException(ErrorCode.FORBIDDEN)
+        # One statement gives role counts over the same user snapshot. Keep the
+        # existing totals unchanged for consumers that already depend on them.
+        users = self._session.execute(
+            text(
+                "SELECT "
+                "COUNT(CASE WHEN is_active = TRUE THEN 1 END) AS active_users, "
+                "COUNT(CASE WHEN role = 'TEACHER' THEN 1 END) AS teachers, "
+                "COUNT(CASE WHEN role = 'TEACHER' AND is_active = TRUE THEN 1 END) "
+                "AS active_teachers, "
+                "COUNT(CASE WHEN role = 'STUDENT' AND is_active = TRUE THEN 1 END) "
+                "AS active_students FROM users"
+            )
+        ).one()
         return {
-            "active_users": self._scalar(
-                "SELECT COUNT(*) FROM users WHERE is_active = TRUE"
-            ),
-            "teachers": self._scalar("SELECT COUNT(*) FROM users WHERE role = 'TEACHER'"),
+            "active_users": int(users.active_users),
+            "teachers": int(users.teachers),
+            "active_teachers": int(users.active_teachers),
+            "active_students": int(users.active_students),
             "published_courses": self._scalar(
                 "SELECT COUNT(*) FROM courses WHERE is_published = TRUE AND archived_at IS NULL"
             ),

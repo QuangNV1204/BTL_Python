@@ -97,9 +97,10 @@ export const quizKeys = {
   detail: (quizId: Id) => ['quizzes', 'detail', quizId] as const,
 }
 
-export async function getLessonQuizzes(lessonId: Id, page = 1, pageSize = 100): Promise<Page<QuizSummaryItem>> {
+export async function getLessonQuizzes(lessonId: Id, page = 1, pageSize = 100, signal?: AbortSignal): Promise<Page<QuizSummaryItem>> {
   const wirePage = await apiGet<Page<QuizSummaryWire>>(`/lessons/${lessonId}/quizzes`, {
     query: { page, page_size: pageSize },
+    signal,
   })
   return {
     ...wirePage,
@@ -107,8 +108,8 @@ export async function getLessonQuizzes(lessonId: Id, page = 1, pageSize = 100): 
   }
 }
 
-export async function getQuiz(quizId: Id): Promise<QuizAuthorDetail> {
-  const wire = await apiGet<QuizAuthorWire>(`/quizzes/${quizId}`)
+export async function getQuiz(quizId: Id, signal?: AbortSignal): Promise<QuizAuthorDetail> {
+  const wire = await apiGet<QuizAuthorWire>(`/quizzes/${quizId}`, { signal })
   return mapQuizAuthor(wire)
 }
 

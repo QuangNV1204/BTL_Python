@@ -74,8 +74,8 @@ export const lessonKeys = {
   documents: (lessonId: Id) => ['lessons', 'documents', lessonId] as const,
 }
 
-export async function getCourseLessons(courseId: Id): Promise<LessonListItem[]> {
-  return (await apiGet<LessonWire[]>(`/courses/${courseId}/lessons`)).map(mapLesson)
+export async function getCourseLessons(courseId: Id, signal?: AbortSignal): Promise<LessonListItem[]> {
+  return (await apiGet<LessonWire[]>(`/courses/${courseId}/lessons`, { signal })).map(mapLesson)
 }
 
 export async function getLearningLessons(courseId: Id): Promise<LessonListItem[]> {
