@@ -50,8 +50,39 @@ Chart accent checks passed the palette validator for light `#4F46E5` and dark
 relying on color alone. The completion circle intentionally follows the existing
 prototype.
 
-## Remaining verification
+## Live backend verification (separate from the fixture UI run)
 
-Run the same pages with the deployed Python backend and real authorized test
-accounts before release. Confirm empty/loading/error states against live API
-behavior. No live-backend or database claims are made by this UI test run.
+A subsequent run connected the actual React frontend through Vite's `/api`
+proxy to the unmodified group FastAPI backend and a dedicated MySQL 8.0.46
+instance bound to loopback. Official Flyway Community 11.20.0 applied and
+validated canonical V1–V9. No existing MySQL service/database was used.
+
+The database contained synthetic QA users and records, not production data.
+Accounts were provisioned directly with BCrypt hashes and verified timestamps.
+Course publication state was set as a database fixture to isolate statistics;
+this run does not claim coverage of the publication UI. Courses, lessons,
+quizzes, questions, enrollment and attempts were otherwise exercised through
+real HTTP endpoints. Mail/live AI were not exercised.
+
+- Two actual submissions scored 100 and 50; a third attempt remained IN_PROGRESS.
+- Course API: one enrollment, one published quiz, two submissions, one completed
+  student, completion rate 100 percent.
+- Quiz API: two submissions, one unique student, average 75, best score 100,
+  one wrong answer on the second question. IN_PROGRESS was excluded.
+- Aggregate API values were compared against direct SQL counts/AVG on the same
+  disposable database, including system active users and teacher counts.
+- Student and nonowner Teacher received 403 for course statistics; Teacher
+  received 403 for system statistics.
+- Browser logged in using the real login form as Teacher and Admin, opened
+  course/quiz/system dashboards, and reloaded successfully with real refresh.
+  Observed statistics responses were HTTP 200 and there were no uncaught page
+  errors or horizontal document overflow at 1440px. Screenshots were inspected.
+- This browser run used no `page.route`, `route.fulfill`, fake responses,
+  dependency overrides or injected authentication tokens. Credentials and JWT
+  signing keys remained local and untracked.
+
+The live run confirms local frontend/backend/database connectivity for these
+statistics paths. The deployed team environment, larger datasets, live error
+states, concurrent mutations and full-system E2E remain outside this evidence.
+System role proportions still require a compatible authorized data breakdown;
+the unavailable-data notice is not an API connectivity error.
