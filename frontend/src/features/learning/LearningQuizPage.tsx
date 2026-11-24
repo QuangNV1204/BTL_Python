@@ -22,7 +22,6 @@ export function LearningQuizPage() {
     return <ErrorState error={quizzesQuery.error} onRetry={() => void quizzesQuery.refetch()} />
   }
 
-  // Phía học viên chỉ hiển thị các quiz đã PUBLISHED
   const quizzes = (quizzesQuery.data?.items ?? []).filter(
     (q) => q.status === 'PUBLISHED',
   )

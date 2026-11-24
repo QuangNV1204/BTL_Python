@@ -1,4 +1,3 @@
-"""Gửi/xác minh token email — sao EmailVerificationService.java."""
 
 from __future__ import annotations
 
@@ -61,7 +60,7 @@ class EmailVerificationService:
         user = self._session.scalars(
             select(User).where(User.email == email.strip().lower())
         ).first()
-        # Luôn 204: không tiết lộ email có tồn tại/đã xác minh hay chưa.
+
         if user is None or user.email_verified_at is not None or not user.is_active:
             return
         self.send_verification_email(user)

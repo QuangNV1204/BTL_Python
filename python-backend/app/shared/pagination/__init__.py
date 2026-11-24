@@ -1,8 +1,3 @@
-"""Phân trang giống Spring Pageable mà java-backend dùng.
-
-Java trả ``{items, page, page_size, total}``; ``page`` bắt đầu từ 1 và route
-Pageable dùng ``size-parameter: page_size``.
-"""
 
 from __future__ import annotations
 

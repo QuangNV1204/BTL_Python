@@ -1,4 +1,3 @@
-"""Nhận dạng ảnh thumbnail bằng magic bytes, tương ứng storage/ImageType.java."""
 
 from __future__ import annotations
 
@@ -39,7 +38,6 @@ class ImageType(str, Enum):
 
 
 def media_type_for_key(storage_key: str) -> str | None:
-    """Suy media type từ đuôi file, như FileAccessService.imageTypeOf."""
     _, _, extension = storage_key.rpartition(".")
     for image_type in ImageType:
         if image_type.extension == extension:

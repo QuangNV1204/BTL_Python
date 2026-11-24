@@ -18,7 +18,6 @@ export default function App() {
 
   return (
     <ThemeModeProvider>
-      {/* AntApp cung cấp message/notification/modal theo theme: dùng App.useApp() trong trang */}
       <AntApp>
         <QueryClientProvider client={queryClient}>
           <RouterProvider router={router} />

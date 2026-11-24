@@ -1,4 +1,3 @@
-"""Category request/response — sao Create/UpdateCategoryRequest và CategoryResponse."""
 
 from __future__ import annotations
 
@@ -32,7 +31,7 @@ class CategoryResponse(BaseModel):
     description: str | None
 
 
-def category_response(category) -> CategoryResponse:  # noqa: ANN001
+def category_response(category) -> CategoryResponse:
     return CategoryResponse(
         id=str(category.id), name=category.name, description=category.description
     )

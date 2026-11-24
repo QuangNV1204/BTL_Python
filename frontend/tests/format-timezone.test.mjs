@@ -18,18 +18,13 @@ try {
   })
 
   test('formatDateTime handles day, month, and year rollovers across UTC -> VN (+7)', () => {
-    // Day rollover: 2026-11-16 20:00 UTC -> 2026-11-17 03:00 VN
     assert.equal(formatDateTime('2026-11-16T20:00:00Z'), '17/11/2026 03:00')
-    // Month rollover: 2026-11-30 18:30 UTC -> 2026-12-01 01:30 VN
     assert.equal(formatDateTime('2026-11-30T18:30:00Z'), '01/12/2026 01:30')
-    // Year rollover: 2026-12-31 17:00 UTC -> 2027-01-01 00:00 VN
     assert.equal(formatDateTime('2026-12-31T17:00:00Z'), '01/01/2027 00:00')
   })
 
   test('formatDateTime handles explicit numeric offsets accurately', () => {
-    // 10:00+02:00 == 08:00Z == 15:00+07:00
     assert.equal(formatDateTime('2026-11-16T10:00:00+02:00'), '16/11/2026 15:00')
-    // 20:00-05:00 == 01:00Z next day == 08:00+07:00 next day
     assert.equal(formatDateTime('2026-11-16T20:00:00-05:00'), '17/11/2026 08:00')
   })
 

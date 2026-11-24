@@ -1,8 +1,3 @@
-"""Sinh request id và gắn vào phạm vi request.
-
-Tương ứng config/RequestIdFilter.java: chấp nhận X-Request-Id do client gửi nếu khớp
-[A-Za-z0-9._-]{1,64}, ngược lại sinh UUID; luôn trả lại header cho client.
-"""
 
 from __future__ import annotations
 

@@ -1,8 +1,3 @@
-"""Token/cookie interop: cùng định dạng key và claim với java-backend.
-
-Key trong test trùng application-test.yaml của Java
-(``dGVzdC1vbmx5LXNpZ25pbmctbWF0ZXJpYWwtMzJieXRlcyEh``).
-"""
 
 from __future__ import annotations
 
@@ -42,7 +37,7 @@ def test_generated_token_has_java_claims() -> None:
         updated_at=datetime.now(UTC).replace(tzinfo=None),
     )
     token = service.generate_token(user)
-    payload = pyjwt.decode(token, service._key, algorithms=["HS256"])  # noqa: SLF001
+    payload = pyjwt.decode(token, service._key, algorithms=["HS256"])
     assert payload["sub"] == "a@example.com"
     assert payload["role"] == ["ROLE_TEACHER"]
     assert isinstance(payload["iat"], int) and isinstance(payload["exp"], int)
@@ -54,7 +49,7 @@ def test_expired_token_is_rejected() -> None:
     past = datetime.now(UTC) - timedelta(minutes=5)
     token = pyjwt.encode(
         {"sub": "a@example.com", "role": ["ROLE_STUDENT"], "exp": past},
-        service._key,  # noqa: SLF001
+        service._key,
         algorithm="HS256",
     )
     with pytest.raises(pyjwt.PyJWTError):
@@ -62,7 +57,6 @@ def test_expired_token_is_rejected() -> None:
 
 
 def test_refresh_token_matches_java_dto_pattern() -> None:
-    """DTO verify/reset yêu cầu [A-Za-z0-9_-]{43}; refresh token cũng vậy."""
     import re
 
     from app.shared.auth.refresh_tokens import generate_token
@@ -94,7 +88,7 @@ def test_refresh_cookie_attributes(client) -> None:
     assert logout.status_code == 204
     assert "Max-Age=0" in logout.headers["set-cookie"]
 
-    # Refresh sau logout bị từ chối 401.
+
     again = client.post("/api/v1/auth/refresh")
     assert again.status_code == 401
 

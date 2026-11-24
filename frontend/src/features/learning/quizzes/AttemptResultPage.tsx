@@ -77,7 +77,6 @@ export function AttemptResultPage() {
 
   return (
     <Space orientation="vertical" size={24} style={{ width: '100%' }}>
-      {/* Thẻ tổng kết điểm số */}
       <Card>
         <Row gutter={[24, 24]} align="middle">
           <Col xs={24} sm={8} style={{ textAlign: 'center' }}>
@@ -133,7 +132,6 @@ export function AttemptResultPage() {
         </Row>
       </Card>
 
-      {/* Xem lại chi tiết từng câu hỏi */}
       <Card
         title="Xem lại bài làm"
         extra={

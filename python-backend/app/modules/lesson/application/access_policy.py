@@ -1,8 +1,3 @@
-"""Quyền theo bài học — sao LessonService.assertCanManage/ViewLesson.
-
-Bài học → khóa học → owner/admin, hoặc student đã ghi danh. Dùng chung cho
-lesson, AI, quiz và flashcard như LessonAccessPolicy của Java.
-"""
 
 from __future__ import annotations
 
@@ -26,7 +21,7 @@ class LessonAccessPolicy:
     def __init__(self, session: Session) -> None:
         self._session = session
 
-    # ---- course-level helpers (dùng cả cho AI/quiz) ----
+
     def lesson_context(self, lesson_id: int) -> Lesson:
         lesson = self._session.get(Lesson, lesson_id)
         if lesson is None:
@@ -61,7 +56,7 @@ class LessonAccessPolicy:
             raise ApiException(ErrorCode.UNAUTHENTICATED)
         return UserRole(role)
 
-    # ---- lesson-level rules ----
+
     def assert_can_manage_lesson(self, lesson_id: int, user_id: int) -> Lesson:
         lesson = self.lesson_context(lesson_id)
         role = self.role_of(user_id)

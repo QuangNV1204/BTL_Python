@@ -1,4 +1,3 @@
-"""Router statistics — khớp StatisticsController.java (TEACHER/ADMIN hoặc ADMIN)."""
 
 from __future__ import annotations
 

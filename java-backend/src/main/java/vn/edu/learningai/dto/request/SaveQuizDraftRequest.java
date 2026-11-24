@@ -50,7 +50,6 @@ public record SaveQuizDraftRequest(String requestId, String title, List<Item> qu
             if (!positions.add(write.orderIndex())) throw invalid("Duplicate question order_index");
             items.add(new Item(id, write));
         }
-        // List order is the final display order. Do not allow ambiguous/sparse positions.
         for (int i = 0; i < items.size(); i++) {
             if (items.get(i).question().orderIndex() != i) throw invalid("Question order_index must match array position");
         }

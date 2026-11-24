@@ -1,4 +1,3 @@
-"""Lưu thumbnail trên filesystem, tương ứng storage/LocalFileStorage.java."""
 
 from __future__ import annotations
 
@@ -32,7 +31,7 @@ class LocalFileStorage:
         target = self._resolve(key)
         try:
             self._root.mkdir(parents=True, exist_ok=True)
-            # CREATE_NEW: không ghi đè file trùng tên (UUID nên gần như không xảy ra).
+
             with target.open("xb") as handle:
                 handle.write(content)
         except OSError as exc:

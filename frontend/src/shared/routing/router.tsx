@@ -36,26 +36,15 @@ import { AttemptsHistoryPage } from '../../features/learning/attempts/AttemptsHi
 import { TakeQuizPage } from '../../features/learning/quizzes/TakeQuizPage'
 import { AttemptResultPage } from '../../features/learning/quizzes/AttemptResultPage'
 
-/**
- * Bảng route của cả app, theo các màn (VIEWS), tab (tabsBar) và quyền (ACCESS) trong
- * docs/03-experience/prototype.html. Danh sách màn + người phụ trách: ./screens.ts;
- * việc cần làm từng màn: frontend/README.md.
- *
- * Làm màn hình nào: tạo trang trong src/features/<khu vực>/, rồi thay `...todo('key')` của route đó bằng
- *   element: <TrangMoi />, handle: { title: '...' }
- * Trang có tab: mỗi tab là một route con, mỗi người chỉ sửa route tab của mình.
- */
 
 const id = (params: Params, key: string) => params[key] ?? ''
 
-/** Tab trang khóa học (prototype courseHead): Thông tin · Bài học · Học viên. */
 const courseTabs = (p: Params): TabItem[] => [
   { to: paths.teachingCourse(id(p, 'courseId')), label: 'Thông tin' },
   { to: paths.teachingCourseLessons(id(p, 'courseId')), label: 'Bài học' },
   { to: paths.teachingCourseStudents(id(p, 'courseId')), label: 'Học viên' },
 ]
 
-/** Tab trang học bài (prototype learn): Tài liệu · Quiz · Flashcard. */
 const learnTabs = (p: Params): TabItem[] => [
   { to: paths.learnLesson(id(p, 'courseId'), id(p, 'lessonId')), label: 'Tài liệu' },
   { to: paths.learnLessonQuiz(id(p, 'courseId'), id(p, 'lessonId')), label: 'Quiz' },
@@ -89,14 +78,12 @@ export const router = createBrowserRouter([
     errorElement: <RouteErrorPage />,
     children: [
       { path: paths.home, element: <HomeRedirect /> },
-      // Ai cũng xem được
       { path: paths.explore, element: <ExplorePage />, handle: { title: 'Khám phá khóa học', search: true } satisfies RouteHandle },
       {
         path: '/courses/:courseId',
         element: <CourseDetailPage />,
         handle: { title: 'Chi tiết khóa học', search: true } satisfies RouteHandle,
       },
-      // Đã đăng nhập
       {
         element: <RequireAccess allow="auth" />,
         children: [{
@@ -110,13 +97,11 @@ export const router = createBrowserRouter([
         }],
       },
 
-      // Sinh viên
       {
         element: <RequireAccess allow={['STUDENT']} />,
         children: [
           { path: paths.myCourses, element: <MyCoursesPage />, handle: { title: 'Khóa học của tôi', search: true } satisfies RouteHandle },
           {
-            // Học bài: người 3 dựng phần chung (video, danh sách bài) làm element của route cha, có <Outlet /> cho tab
             path: '/learn/:courseId/lessons/:lessonId',
             element: <LearningLessonLayout />,
             handle: { title: 'Học bài', tabs: learnTabs } satisfies RouteHandle,
@@ -151,13 +136,11 @@ export const router = createBrowserRouter([
           },
         ],
       },
-      // Giảng viên
       {
         element: <RequireAccess allow={['TEACHER']} />,
         children: [
           { path: paths.teachingCourses, element: <TeachingCoursesPage />, handle: { title: 'Khóa học giảng dạy' } satisfies RouteHandle },
           {
-            // Khóa học: người 2 đặt tên khóa học + breadcrumb (usePageHeader) và nút thao tác
             path: '/teaching/courses/:courseId',
             handle: { title: 'Khóa học', tabs: courseTabs } satisfies RouteHandle,
             children: [
@@ -173,7 +156,6 @@ export const router = createBrowserRouter([
           { path: '/teaching/lessons/new/quizzes', element: <NewLessonRedirect /> },
           { path: '/teaching/lessons/new/ai/*', element: <NewLessonRedirect /> },
           {
-            // Soạn bài học: người 3 đặt tên bài + breadcrumb (usePageHeader)
             path: '/teaching/lessons/:lessonId',
             handle: { title: 'Soạn bài học', tabs: lessonTabs } satisfies RouteHandle,
             children: [
@@ -204,7 +186,6 @@ export const router = createBrowserRouter([
           { path: '/teaching/statistics/quizzes/:quizId', element: <QuizStatisticsPage /> },
         ],
       },
-      // Quản trị
       {
         element: <RequireAccess allow={['ADMIN']} />,
         children: [

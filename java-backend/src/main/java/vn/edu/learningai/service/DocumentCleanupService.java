@@ -34,10 +34,8 @@ public class DocumentCleanupService {
         requireTransaction();
         var tx = new TransactionTemplate(transactionManager);
         tx.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
-        // Durable intent exists BEFORE any bytes are written. A DB error stops the upload.
         tx.executeWithoutResult(s -> jdbc.sql(
             "INSERT INTO document_cleanup_jobs(storage_key,job_type) VALUES(:key,'STAGING')").param("key", key).update());
-        // Hold until metadata commit/rollback. Worker must never delete a live upload.
         var job = jdbc.sql("SELECT storage_key FROM document_cleanup_jobs WHERE storage_key=:key FOR UPDATE")
             .param("key", key).query(String.class).optional();
         if (job.isEmpty()) throw new IllegalStateException("Upload staging was reclaimed; retry upload");
@@ -50,7 +48,6 @@ public class DocumentCleanupService {
 
     public void adoptUpload(String key) {
         requireTransaction();
-        // Removal commits atomically with the new metadata. A crash rolls back both.
         jdbc.sql("DELETE FROM document_cleanup_jobs WHERE storage_key=:key").param("key", key).update();
     }
 
@@ -74,25 +71,20 @@ public class DocumentCleanupService {
             var tx = new TransactionTemplate(transactionManager);
             tx.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
             tx.executeWithoutResult(status -> {
-                // Skip live uploads; do not let one slow writer block the entire retry batch.
                 var job = jdbc.sql("SELECT job_type FROM document_cleanup_jobs WHERE storage_key=:key FOR UPDATE SKIP LOCKED")
                     .param("key", key).query(String.class).optional();
                 if (job.isEmpty()) return;
-                // Protect a committed document even if a stale/manual job remains.
                 boolean adopted = jdbc.sql("SELECT EXISTS(SELECT 1 FROM lesson_documents WHERE storage_key=:key)")
                     .param("key", key).query(Boolean.class).single();
-                if (!adopted) storage.delete(key); // UUID keys never reused; deletion is idempotent.
+                if (!adopted) storage.delete(key); 
                 if (adopted || "DELETE".equals(job.get())) {
                     jdbc.sql("DELETE FROM document_cleanup_jobs WHERE storage_key=:key").param("key", key).update();
                 } else {
-                    // Retain tombstone even after deleting bytes: a writer whose DB lock was
-                    // lost can wake later and create the file. A future sweep removes it again.
                     jdbc.sql("UPDATE document_cleanup_jobs SET checked_at=UTC_TIMESTAMP(6) WHERE storage_key=:key")
                         .param("key", key).update();
                 }
             });
         } catch (RuntimeException failure) {
-            // Metadata deletion already committed. Keep the durable job for retry.
             log.error("Document cleanup failed; durable job retained for retry", failure);
         }
     }

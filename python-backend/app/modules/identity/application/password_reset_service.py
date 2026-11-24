@@ -1,4 +1,3 @@
-"""Quên/đặt lại mật khẩu — sao PasswordResetService.java."""
 
 from __future__ import annotations
 
@@ -40,7 +39,7 @@ class PasswordResetService:
             .where(User.email == email.strip().lower())
             .with_for_update()
         ).first()
-        # Luôn im lặng: không tiết lộ tài khoản có tồn tại/khóa/chưa xác minh.
+
         if user is None or not user.is_active or user.email_verified_at is None:
             return
 
@@ -94,7 +93,7 @@ class PasswordResetService:
         self._invalidate_all_for_user(user.id, now)
         self._refresh_tokens.revoke_all_for_user(user.id)
 
-    def _invalidate_all_for_user(self, user_id: int, now) -> None:  # noqa: ANN001
+    def _invalidate_all_for_user(self, user_id: int, now) -> None:
         self._session.execute(
             update(PasswordResetToken)
             .where(PasswordResetToken.user_id == user_id, PasswordResetToken.used_at.is_(None))

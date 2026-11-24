@@ -1,4 +1,3 @@
-"""Hồ sơ, khóa tài khoản và danh sách user — sao UserService.java."""
 
 from __future__ import annotations
 

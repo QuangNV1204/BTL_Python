@@ -5,7 +5,6 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import tools.jackson.databind.json.JsonMapper;
 
-/** Chọn cài đặt AIClient theo app.ai.provider. */
 @Configuration
 @EnableConfigurationProperties(AiProperties.class)
 public class AiConfig {

@@ -1,4 +1,3 @@
-"""Router flashcard — khớp FlashcardController.java."""
 
 from __future__ import annotations
 

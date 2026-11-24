@@ -14,10 +14,6 @@ import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-/**
- * AI giả lập để demo offline: không gọi mạng, trả candidate cùng cấu trúc với AI thật,
- * dựng từ các câu trong nguồn. Đọc TASK/COUNT từ header của prompt (AiPromptBuilder).
- */
 public class MockAIClient implements AIClient {
 
     private static final Pattern TASK = Pattern.compile("^TASK: (QUIZ|FLASHCARD)$", Pattern.MULTILINE);

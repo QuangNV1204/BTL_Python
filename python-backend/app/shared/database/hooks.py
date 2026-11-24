@@ -1,9 +1,3 @@
-"""Callback sau commit/rollback của một request, tương ứng TransactionSynchronization.
-
-Session SQLAlchemy không phát sự kiện commit của tầng ứng dụng, nên tầng HTTP gọi
-``run_after_commit``/``run_after_rollback`` sau khi commit/rollback transaction của
-request. Java dùng cơ chế tương tự để chỉ xóa file sau khi metadata đã commit.
-"""
 
 from __future__ import annotations
 
@@ -31,7 +25,7 @@ def run_after_commit(session: Session) -> None:
     for callback in callbacks:
         try:
             callback()
-        except Exception:  # noqa: BLE001 - lỗi dọn dẹp không được làm hỏng response
+        except Exception:
             logger.error("after-commit callback failed", exc_info=True)
 
 
@@ -41,5 +35,5 @@ def run_after_rollback(session: Session) -> None:
     for callback in callbacks:
         try:
             callback()
-        except Exception:  # noqa: BLE001
+        except Exception:
             logger.error("after-rollback callback failed", exc_info=True)

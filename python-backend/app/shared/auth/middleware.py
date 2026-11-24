@@ -1,12 +1,3 @@
-"""Xác thực Bearer token cho mọi request, tương ứng JwtAuthenticationFilter.
-
-Hành vi giữ như Java:
-- Không có header Authorization → request đi tiếp ở trạng thái ẩn danh.
-- Token không giải mã được hoặc user không còn tồn tại → coi như ẩn danh (Java log
-  lỗi rồi cho qua); route cần đăng nhập sẽ trả 401.
-- Token hợp lệ nhưng tài khoản bị khóa → trả ngay 403 ACCOUNT_INACTIVE, kể cả
-  refresh/logout (api-conventions.md yêu cầu điều này).
-"""
 
 from __future__ import annotations
 
@@ -30,7 +21,7 @@ logger = logging.getLogger("learningai.auth")
 
 
 class AuthMiddleware(BaseHTTPMiddleware):
-    def __init__(self, app, jwt_service: JwtService, session_factory) -> None:  # noqa: ANN001
+    def __init__(self, app, jwt_service: JwtService, session_factory) -> None:
         super().__init__(app)
         self._jwt = jwt_service
         self._session_factory = session_factory

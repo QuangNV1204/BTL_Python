@@ -4,10 +4,6 @@ import { Link } from 'react-router'
 import { isApiError } from '../api/client'
 import { paths } from '../routing/paths'
 
-/**
- * Bốn trạng thái mọi màn hình phải có (design-brief mục 2.4 và mục 8):
- * loading, empty, error, forbidden (+ not found).
- */
 
 export function LoadingState({ tip = 'Đang tải…' }: { tip?: string }) {
   return (
@@ -52,7 +48,6 @@ export function NotFoundState() {
   )
 }
 
-/** Hiển thị lỗi từ API theo mã: 403 → không có quyền, 404 → không tìm thấy, còn lại → lỗi + thử lại. */
 export function ErrorState({ error, onRetry }: { error: unknown; onRetry?: () => void }) {
   if (isApiError(error)) {
     if (error.status === 403) {

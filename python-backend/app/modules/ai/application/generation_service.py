@@ -1,8 +1,3 @@
-"""Sinh quiz/flashcard bằng AI — sao AiGenerationService.java.
-
-Chỉ trả preview candidate, không tạo quiz/card. Gọi AI ngoài transaction; mỗi lần
-sinh (thành công hay lỗi) lưu một bản ghi ``ai_generations`` để tra vết.
-"""
 
 from __future__ import annotations
 
@@ -87,7 +82,7 @@ class AiGenerationService:
         self._policy = policy
         self._lessons = lesson_service
 
-    # ----------------------------------------------------------------- public
+
     def generate_quiz(self, teacher_id: int, request: GenerationRequest) -> dict:
         if request.difficulty is None:
             raise ApiException.field_error(
@@ -129,7 +124,6 @@ class AiGenerationService:
     def validate_for_save(
         self, generation_id: int, lesson_id: int, teacher_id: int, generation_type: GenerationType
     ) -> AIGeneration:
-        """Kiểm tra generation_id trước khi lưu Draft (Quiz/Flashcard service gọi)."""
         generation = self._session.get(AIGeneration, generation_id)
         if generation is None:
             raise ApiException.field_error("generation_id", "generation not found")
@@ -147,7 +141,7 @@ class AiGenerationService:
             raise ApiException.field_error("generation_id", "generation did not succeed")
         return generation
 
-    # -------------------------------------------------------------- internals
+
     def _generate(
         self,
         teacher_id: int,
@@ -217,12 +211,6 @@ class AiGenerationService:
         return _Generated(generation, candidate, truncated)
 
     def _save_failed(self, generation: AIGeneration, code: ErrorCode) -> None:
-        """Ghi bản ghi FAILED bằng transaction riêng.
-
-        Java không bọc generate() trong transaction nên bản ghi lỗi vẫn persist dù
-        request trả 502/504. Ở đây request có transaction riêng sẽ rollback khi ném
-        ApiException, nên phải ghi qua session độc lập.
-        """
         from app.shared.database.session import SessionLocal
 
         generation.status = GenerationStatus.FAILED.value
@@ -244,7 +232,7 @@ def _check_source(request: GenerationRequest) -> int | None:
     return request.document_id
 
 
-def _candidate_json(value) -> dict:  # noqa: ANN001
+def _candidate_json(value) -> dict:
     if isinstance(value, QuizCandidate):
         return {"questions": _questions_json(value.questions)}
     if isinstance(value, FlashcardCandidate):

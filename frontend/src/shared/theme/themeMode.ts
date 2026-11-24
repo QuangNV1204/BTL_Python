@@ -8,7 +8,6 @@ export interface ThemeModeValue {
 
 export const ThemeModeContext = createContext<ThemeModeValue>({ mode: 'light', toggle: () => {} })
 
-/** Chế độ sáng/tối hiện tại và hàm đổi (menu tài khoản: "Đổi giao diện sáng / tối"). */
 export function useThemeMode(): ThemeModeValue {
   return useContext(ThemeModeContext)
 }
@@ -22,7 +21,6 @@ export function initialThemeMode(): ThemeMode {
       return saved
     }
   } catch {
-    // localStorage bị chặn (chế độ riêng tư...): theo hệ thống.
   }
   return window.matchMedia?.('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'
 }
@@ -31,6 +29,5 @@ export function saveThemeMode(mode: ThemeMode): void {
   try {
     window.localStorage.setItem(STORAGE_KEY, mode)
   } catch {
-    // Không lưu được thì thôi, lần sau theo hệ thống.
   }
 }

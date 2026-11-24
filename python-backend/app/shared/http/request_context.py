@@ -1,4 +1,3 @@
-"""Middleware gắn request id + header X-Request-Id, tương ứng RequestIdFilter.java."""
 
 from __future__ import annotations
 

@@ -12,7 +12,6 @@ import vn.edu.learningai.dto.response.QuizCandidateResponse;
 import vn.edu.learningai.security.CurrentUserProvider;
 import vn.edu.learningai.service.AiGenerationService;
 
-/** AI-01: sinh preview quiz/flashcard. Chỉ owner của lesson hoặc admin; không tạo nội dung. */
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/api/v1/ai")

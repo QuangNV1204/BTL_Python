@@ -1,8 +1,3 @@
-"""Khóa học, thumbnail, publication, archive, marketplace.
-
-Gộp CourseService + CoursePublicationService + MarketplaceService +
-CourseOwnerAssembler + ThumbnailService + CourseOwnership của Java.
-"""
 
 from __future__ import annotations
 
@@ -48,7 +43,7 @@ class CourseService:
         self._storage = storage
         self._max_thumbnail_bytes = max_thumbnail_bytes
 
-    # ------------------------------------------------------------------ owner
+
     def require_owned(self, course_id: int, actor: AuthenticatedUser) -> Course:
         course = self._session.get(Course, course_id)
         if course is None:
@@ -165,7 +160,7 @@ class CourseService:
         self._session.flush()
         self._delete_after_commit(key)
 
-    # ------------------------------------------------------------ publication
+
     def set_published(
         self, course_id: int, publish: bool, actor: AuthenticatedUser
     ) -> CourseOwnerResponse:
@@ -189,14 +184,14 @@ class CourseService:
         course = self.require_owned(course_id, actor)
         if course.archived_at is not None:
             return self._owner_response(course)
-        # Instant.now().truncatedTo(MICROS) — DATETIME(6) đã là microsecond.
+
         course.archived_at = utcnow()
         course.is_published = False
         course.updated_at = utcnow()
         self._session.flush()
         return self._owner_response(course)
 
-    # ------------------------------------------------------------ marketplace
+
     def search(
         self,
         query: str | None,
@@ -220,7 +215,7 @@ class CourseService:
             statement = statement.where(Course.category_id == category_id)
             count_statement = count_statement.where(Course.category_id == category_id)
         if normalized:
-            # LIKE với escape '!' và lower() — giống MarketplaceQueryRepository.
+
             pattern = "%" + _escape_like(normalized.lower()) + "%"
             condition = func.lower(Course.title).like(pattern, escape="!")
             statement = statement.where(condition)
@@ -275,7 +270,7 @@ class CourseService:
             outline=outline,
         )
 
-    # -------------------------------------------------------------- internals
+
     def _require_category(self, category_id: int) -> Category:
         category = self._session.get(Category, category_id)
         if category is None:
@@ -380,7 +375,6 @@ def _escape_like(value: str) -> str:
 
 
 def _order_by(sort: str | None) -> tuple:
-    """Sao MarketplaceQueryRepository.orderBy: chỉ price/title/updatedAt, mặc định createdAt."""
     clauses: list = []
     if sort and sort.strip():
         parts = [part.strip() for part in sort.strip().split(",", 1)]

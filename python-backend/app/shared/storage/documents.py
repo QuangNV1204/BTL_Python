@@ -1,8 +1,3 @@
-"""Lưu và trích text tài liệu bài học.
-
-Java dùng Apache Tika; Python dùng pypdf cho PDF và python-docx cho DOCX, txt đọc
-trực tiếp. Phạm vi MIME giữ đúng ALLOWED_MEDIA_TYPES của LessonService.
-"""
 
 from __future__ import annotations
 
@@ -24,7 +19,6 @@ ALLOWED_MEDIA_TYPES = frozenset({PDF_TYPE, TEXT_TYPE, DOCX_TYPE})
 
 
 class DocumentStorage:
-    """Tương ứng service/LocalDocumentStorage.java."""
 
     def __init__(self, settings: Settings) -> None:
         self._root = settings.lesson_document_storage.expanduser().resolve()
@@ -68,7 +62,6 @@ class DocumentStorage:
 
 
 def extract_text(content: bytes, media_type: str) -> str | None:
-    """Trích text; rỗng trả None. Lỗi parser → 415 như TikaDocumentTextExtractor."""
     try:
         if media_type == TEXT_TYPE:
             text = content.decode("utf-8", errors="replace")
@@ -80,7 +73,7 @@ def extract_text(content: bytes, media_type: str) -> str | None:
             raise ApiException(ErrorCode.UNSUPPORTED_FILE_TYPE)
     except ApiException:
         raise
-    except Exception as exc:  # noqa: BLE001 - parser bên thứ ba ném nhiều loại lỗi
+    except Exception as exc:
         logger.warning("Could not extract text from %s", media_type, exc_info=exc)
         raise ApiException(
             ErrorCode.UNSUPPORTED_FILE_TYPE, "Could not extract text from document"

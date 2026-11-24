@@ -4,7 +4,6 @@ import { QueryClient, QueryObserver } from '@tanstack/react-query'
 import { createServer } from 'vite'
 import { fileURLToPath } from 'node:url'
 
-// A POST inside a query must not be re-executed by background read triggers.
 test('reconnect after submission cannot silently create a new active attempt', async () => {
   const oldFetch = globalThis.fetch
   const server = await createServer({ configFile:false, root:fileURLToPath(new URL('..',import.meta.url)),
@@ -23,7 +22,6 @@ test('reconnect after submission cannot silently create a new active attempt', a
     observer=new QueryObserver(client,options)
     unsubscribe=observer.subscribe(()=>{})
     await client.fetchQuery(options)
-    // This is TanStack's real reconnect path, not a hand-written retry simulation.
     client.getQueryCache().find({queryKey:options.queryKey}).onOnline()
     await new Promise(setImmediate)
     assert.equal(starts,1,'background reconnect must not repeat POST /attempts')
@@ -33,7 +31,6 @@ test('reconnect after submission cannot silently create a new active attempt', a
     unsubscribe=observer.subscribe(()=>{})
     await new Promise(setImmediate)
     assert.equal(starts,1,'mount must not repeat a side-effect query before cleanup')
-    // Entering quiz intentionally after leaving removes old entry and starts a real new attempt.
     unsubscribe();unsubscribe=undefined
     client.removeQueries({queryKey:options.queryKey,exact:true})
     await client.fetchQuery(options)

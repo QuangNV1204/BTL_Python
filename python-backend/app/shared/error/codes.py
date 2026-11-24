@@ -1,4 +1,3 @@
-"""Mã lỗi và HTTP status tương ứng, giữ đúng ErrorCode của java-backend."""
 
 from __future__ import annotations
 
@@ -40,7 +39,6 @@ class ErrorCode(str, Enum):
     EMAIL_ALREADY_EXISTS = "EMAIL_ALREADY_EXISTS"
 
 
-# ErrorCode → (HTTP status, message mặc định), sao nguyên ErrorCode.java.
 ERROR_SPEC: dict[ErrorCode, tuple[int, str]] = {
     ErrorCode.VALIDATION_ERROR: (400, "Invalid data"),
     ErrorCode.EMAIL_NOT_VERIFIED: (403, "Email has not been verified"),

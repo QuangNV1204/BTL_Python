@@ -76,7 +76,6 @@ export function GeneratePanel({ lessonId, onManualCard }: GeneratePanelProps) {
     })
   }
   const cancel = () => {
-    // AbortController ngăn phản hồi AI đến muộn mở trang xem trước sau khi Hủy.
     controller.current?.abort()
     generateMutation.reset()
   }

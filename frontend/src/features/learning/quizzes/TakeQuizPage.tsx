@@ -30,8 +30,6 @@ export function TakeQuizPage() {
   })
   const attemptQuery = useQuery(activeAttemptOptions(quizId))
 
-  // Release only after leaving the page. Removing an observed query during submit
-  // can recreate it on a render and execute the start POST again.
   useEffect(() => () => {
     queryClient.removeQueries({ queryKey: activeAttemptKey(quizId), exact: true })
   }, [queryClient, quizId])

@@ -111,7 +111,6 @@ function QuizEditorForm({ quiz }: { quiz: QuizAuthorDetail }) {
   )
   const [isDirty, setIsDirty] = useState(false)
 
-  // Cảnh báo khi người dùng rời trang lúc chưa lưu
   useEffect(() => {
     const handleBeforeUnload = (e: BeforeUnloadEvent) => {
       if (isDirty) {
@@ -123,7 +122,6 @@ function QuizEditorForm({ quiz }: { quiz: QuizAuthorDetail }) {
     return () => window.removeEventListener('beforeunload', handleBeforeUnload)
   }, [isDirty])
 
-  // Checklist chi tiết từng câu hỏi
   const validation = useMemo(() => {
     const hasQuestions = questions.length >= 1
 
@@ -159,7 +157,6 @@ function QuizEditorForm({ quiz }: { quiz: QuizAuthorDetail }) {
     }
   }, [questions])
 
-  // Mutation lưu quiz và câu hỏi
   const saveMutation = useMutation({
     mutationFn: async () => {
       setIsSaving(true)
@@ -184,7 +181,6 @@ function QuizEditorForm({ quiz }: { quiz: QuizAuthorDetail }) {
     },
   })
 
-  // Mutation xuất bản
   const publishMutation = useMutation({
     mutationFn: async () => {
       if (isDirty) {
@@ -200,7 +196,6 @@ function QuizEditorForm({ quiz }: { quiz: QuizAuthorDetail }) {
     onError: (error: Error) => void message.error(error.message),
   })
 
-  // Tạo bản nháp mới từ quiz đã đóng/xuất bản
   const cloneMutation = useMutation({
     mutationFn: async () => {
       const newQuiz = await createQuiz(quiz.lessonId, {
@@ -386,7 +381,6 @@ function QuizEditorForm({ quiz }: { quiz: QuizAuthorDetail }) {
 
   return (
     <Row gutter={[24, 24]}>
-      {/* Cột trái: Tên và danh sách câu hỏi */}
       <Col xs={24} lg={17}>
         <Space orientation="vertical" size={16} style={{ width: '100%' }}>
           {isReadOnly && (
@@ -414,7 +408,6 @@ function QuizEditorForm({ quiz }: { quiz: QuizAuthorDetail }) {
             />
           </Card>
 
-          {/* Danh sách câu hỏi */}
           {questions.map((q, qIndex) => (
             <Card
               key={q.id || `new-${qIndex}`}
@@ -600,7 +593,6 @@ function QuizEditorForm({ quiz }: { quiz: QuizAuthorDetail }) {
         </Space>
       </Col>
 
-      {/* Cột phải: Sidebar điều kiện xuất bản & Hành động */}
       <Col xs={24} lg={7}>
         <Space orientation="vertical" size={16} style={{ width: '100%', position: 'sticky', top: 20 }}>
           <Card title="Trạng thái">

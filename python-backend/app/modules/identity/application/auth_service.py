@@ -1,4 +1,3 @@
-"""Đăng ký, đăng nhập, refresh, đổi mật khẩu — sao AuthService.java."""
 
 from __future__ import annotations
 
@@ -42,7 +41,6 @@ class AuthTokenResult:
 
 
 def hash_password(password: str) -> str:
-    """BCrypt cost 10 như ``new BCryptPasswordEncoder(10)`` của Java."""
     return bcrypt.hashpw(password.encode("utf-8"), bcrypt.gensalt(rounds=10)).decode("ascii")
 
 
@@ -100,7 +98,7 @@ class AuthService:
         except IntegrityError as exc:
             raise ApiException(ErrorCode.EMAIL_ALREADY_EXISTS) from exc
 
-        # Gửi mail trong cùng transaction: SMTP lỗi thì rollback cả user, đúng Java.
+
         self._email_verification.send_verification_email(user)
         return user_response(user)
 

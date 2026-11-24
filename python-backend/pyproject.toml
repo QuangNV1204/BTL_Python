@@ -38,6 +38,5 @@ include = ["app*"]
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 filterwarnings = [
-    # TestClient dùng httpx; cảnh báo này chỉ của môi trường test.
     "ignore::DeprecationWarning:starlette.testclient",
 ]

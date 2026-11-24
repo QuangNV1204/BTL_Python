@@ -1,7 +1,3 @@
-"""Bài học và tài liệu — sao LessonService.java.
-
-Gồm cả LessonAccessPolicy và LessonSourceTextProvider để AI/quiz/flashcard dùng lại.
-"""
 
 from __future__ import annotations
 
@@ -46,7 +42,6 @@ MAX_DOCUMENT_BYTES = 10 * 1024 * 1024
 
 @dataclass(frozen=True)
 class UploadedDocument:
-    """File client gửi lên (FastAPI UploadFile đã đọc thành bytes)."""
 
     filename: str | None
     content_type: str | None
@@ -78,7 +73,7 @@ class LessonService:
         self._policy = policy
         self._cleanup = DocumentCleanupService(session, storage)
 
-    # ------------------------------------------------------------- read/list
+
     def list_for_course(self, course_id: int, user_id: int) -> list[LessonResponse]:
         include_transcript = (
             self._policy.assert_can_view_course(course_id, user_id) is LessonViewAccess.MANAGER
@@ -95,7 +90,7 @@ class LessonService:
         access = self._policy.assert_can_view_lesson(lesson_id, user_id)
         return self._to_response(lesson, access is LessonViewAccess.MANAGER)
 
-    # ----------------------------------------------------------------- write
+
     def create(self, course_id: int, request: LessonWriteRequest, user_id: int) -> LessonResponse:
         self._policy.assert_can_manage_course(course_id, user_id)
         lessons = self._lock_course_lessons(course_id)
@@ -115,7 +110,7 @@ class LessonService:
 
     def update(self, lesson_id: int, request: LessonWriteRequest, user_id: int) -> LessonResponse:
         lesson = self._policy.assert_can_manage_lesson(lesson_id, user_id)
-        # Lesson.updateContent: title/video_url trim, transcript rỗng → NULL.
+
         lesson.title = request.title.strip()
         lesson.video_url = (request.video_url or "").strip()
         lesson.transcript_text = _normalize_optional(request.transcript_text)
@@ -141,7 +136,7 @@ class LessonService:
             )
 
         size = len(lessons)
-        # Đẩy tạm ra ngoài khoảng để tránh vi phạm UNIQUE(course_id, order_index).
+
         for index, lesson in enumerate(lessons):
             lesson.order_index = index + size + 1000
         self._session.flush()
@@ -170,7 +165,7 @@ class LessonService:
         self._session.flush()
         self._compact_orders(lesson.course_id)
 
-    # ------------------------------------------------------------- documents
+
     def list_documents(self, lesson_id: int, user_id: int) -> list[LessonDocumentResponse]:
         self._policy.assert_can_view_lesson(lesson_id, user_id)
         return [self._to_document_response(row) for row in self._documents_of(lesson_id)]
@@ -219,7 +214,7 @@ class LessonService:
         self._session.delete(document)
         self._session.flush()
 
-    # ------------------------------------------------- source text for the AI
+
     def get_source_text(
         self, lesson_id: int, source_type: SourceType, document_id: int | None
     ) -> str:
@@ -249,7 +244,7 @@ class LessonService:
             raise ApiException(ErrorCode.SOURCE_TEXT_EMPTY)
         return text
 
-    # ------------------------------------------------------------- internals
+
     def _lock_course_lessons(self, course_id: int) -> list[Lesson]:
         return list(
             self._session.scalars(

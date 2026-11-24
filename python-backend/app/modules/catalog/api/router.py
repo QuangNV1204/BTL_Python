@@ -1,4 +1,3 @@
-"""Router category — GET public, ghi cần ADMIN (SecurityConfig.java)."""
 
 from __future__ import annotations
 

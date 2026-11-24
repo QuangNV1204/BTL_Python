@@ -1,8 +1,3 @@
-"""AI giả lập để demo offline, sao nguyên MockAIClient.java.
-
-Không gọi mạng; trả candidate cùng cấu trúc với AI thật, dựng từ các câu trong
-nguồn. Đọc TASK/COUNT từ header của prompt.
-"""
 
 from __future__ import annotations
 

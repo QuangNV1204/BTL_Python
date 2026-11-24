@@ -1,8 +1,3 @@
-"""Gửi email xác minh / đặt lại mật khẩu, tương ứng service/EmailService.java.
-
-Template HTML giữ nguyên nội dung của java-backend/src/main/resources/templates để
-email nhận được giống hệt khi chuyển backend.
-"""
 
 from __future__ import annotations
 
@@ -71,8 +66,8 @@ class EmailService:
     ) -> None:
         settings = self._settings
         if not settings.mail_username or not settings.mail_password:
-            # Thiếu cấu hình SMTP: báo 503 EMAIL_SEND_FAILED thay vì âm thầm bỏ qua,
-            # đúng như Java khi JavaMailSender không gửi được.
+
+
             logger.error("MAIL_USERNAME/MAIL_PASSWORD chưa cấu hình; không gửi được email")
             raise ApiException(ErrorCode.EMAIL_SEND_FAILED, error_message)
 
@@ -88,7 +83,7 @@ class EmailService:
                 smtp.starttls()
                 smtp.login(settings.mail_username, settings.mail_password)
                 smtp.send_message(message)
-        except Exception as exc:  # noqa: BLE001 - SMTP ném nhiều loại lỗi
+        except Exception as exc:
             logger.error("Could not send email to %s", recipient, exc_info=exc)
             raise ApiException(ErrorCode.EMAIL_SEND_FAILED, error_message) from exc
 

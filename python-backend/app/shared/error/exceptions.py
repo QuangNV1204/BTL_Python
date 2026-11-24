@@ -1,4 +1,3 @@
-"""ApiException và FieldError — tương ứng exception/ApiException.java."""
 
 from __future__ import annotations
 
@@ -41,12 +40,12 @@ class ApiException(Exception):
 
 
 class StorageException(Exception):
-    """Tương ứng storage/StorageException.java: luôn ánh xạ thành 500 UNCATEGORIZED_EXCEPTION."""
+    pass
 
 
 class InvalidCandidateException(Exception):
-    """Output AI sai contract (AiCandidateValidator.InvalidCandidateException)."""
+    pass
 
 
 class CandidateSourceError(Exception):
-    """Nguồn text rỗng/không dùng được (trước khi gọi AI)."""
+    pass

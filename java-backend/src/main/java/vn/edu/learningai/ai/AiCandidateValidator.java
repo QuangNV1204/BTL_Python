@@ -15,12 +15,6 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Set;
 
-/**
- * Kiểm tra output AI theo contracts/ai-output.md: đúng object/kiểu/field bắt buộc, không null/rỗng,
- * đúng số lượng, không trùng sau normalize, đúng giới hạn độ dài và số option, đúng một is_correct=true,
- * từ chối field lạ. Không sửa output: sai là ném {@link InvalidCandidateException}.
- * {@link #checkQuestion} và các hằng số giới hạn dùng chung được cho phần quiz (người 4).
- */
 @Component
 public class AiCandidateValidator {
 
@@ -98,7 +92,6 @@ public class AiCandidateValidator {
         return cards;
     }
 
-    /** Quy tắc một câu hỏi trắc nghiệm: 2–6 option, đúng 1 đáp án đúng, option không trùng. */
     public void checkQuestion(String content, List<OptionCandidate> options, String path) {
         if (content == null || content.isBlank() || content.length() > MAX_QUESTION_LENGTH) {
             throw invalid(path + ".content must be 1-" + MAX_QUESTION_LENGTH + " characters");
@@ -134,7 +127,6 @@ public class AiCandidateValidator {
         return requireObject(root, "root", allowedFields);
     }
 
-    /** Chấp nhận đúng một khối ```json ... ``` bao quanh toàn bộ output; markdown khác coi là lỗi parse. */
     private static String stripCodeFence(String s) {
         if (s.startsWith("```") && s.endsWith("```") && s.length() > 6) {
             int firstNewline = s.indexOf('\n');
@@ -195,7 +187,6 @@ public class AiCandidateValidator {
         return text.isEmpty() ? null : text;
     }
 
-    /** Normalize để so trùng: Unicode NFC, chữ thường, gộp khoảng trắng. */
     static String normalize(String s) {
         return Normalizer.normalize(s, Normalizer.Form.NFC)
             .toLowerCase(Locale.ROOT)
@@ -207,7 +198,6 @@ public class AiCandidateValidator {
         return new InvalidCandidateException(reason);
     }
 
-    /** Output AI sai contract; service lưu generation FAILED + AI_OUTPUT_INVALID. */
     public static class InvalidCandidateException extends RuntimeException {
         public InvalidCandidateException(String reason) {
             super(reason);

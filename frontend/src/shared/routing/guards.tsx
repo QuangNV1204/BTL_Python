@@ -15,12 +15,6 @@ export function HomeRedirect() {
   return <Navigate to={homePathFor(role)} replace />
 }
 
-/**
- * Chặn trang theo vai trò (bảng ACCESS của prototype). Chỉ là chặn phía UI; backend vẫn kiểm tra quyền.
- * - allow="auth": mọi người đã đăng nhập
- * - allow=['TEACHER']...: chỉ các vai trò này
- * Khách vào trang cần đăng nhập → chuyển sang /login, giữ trang đích; sai vai trò → trang 403.
- */
 export function RequireAccess({ allow }: { allow: 'auth' | Exclude<ViewerRole, 'GUEST'>[] }) {
   const { role, isLoading, error } = useCurrentUser()
   const { pathname, search } = useLocation()

@@ -20,10 +20,6 @@ import vn.edu.learningai.repository.FlashcardRepository;
 
 import java.time.Instant;
 
-/**
- * Flashcard của bài học (CARD-01). Vòng đời DRAFT → PUBLISHED → CLOSED; chỉ Draft được sửa/xóa,
- * Published bất biến. Student đã ghi danh chỉ thấy Published.
- */
 @Service
 @RequiredArgsConstructor
 public class FlashcardService {
@@ -57,7 +53,6 @@ public class FlashcardService {
             .build();
     }
 
-    /** Tạo flashcard Draft; có generation_id hợp lệ thì generated_by_ai = true (server suy ra). */
     @Transactional
     public CardResponse saveDraft(Long lessonId, Long teacherId, CardWriteRequest request) {
         lessonAccessPolicy.assertCanManageLesson(lessonId, teacherId);
@@ -95,7 +90,6 @@ public class FlashcardService {
         flashcardRepository.delete(loadManagedDraft(cardId, teacherId));
     }
 
-    /** PATCH publication: PUBLISHED gọi publish, CLOSED gọi close. */
     @Transactional
     public CardResponse changeStatus(Long cardId, Long teacherId, FlashcardStatus target) {
         return switch (target) {
@@ -105,7 +99,6 @@ public class FlashcardService {
         };
     }
 
-    /** DRAFT → PUBLISHED sau khi kiểm tra hai mặt không rỗng. Publish lặp lại trả dữ liệu cũ. */
     @Transactional
     public CardResponse publish(Long cardId, Long teacherId) {
         Flashcard card = loadManaged(cardId, teacherId);
@@ -123,7 +116,6 @@ public class FlashcardService {
         return flashcardMapper.toCardResponse(flashcardRepository.save(card));
     }
 
-    /** PUBLISHED → CLOSED: student không còn thấy. Close lặp lại trả dữ liệu cũ. */
     @Transactional
     public CardResponse close(Long cardId, Long teacherId) {
         Flashcard card = loadManaged(cardId, teacherId);

@@ -12,17 +12,11 @@ import { Icon } from './Icon'
 import { PageHeaderContext, type PageHeader } from './pageHeader'
 import type { IconName } from './iconPaths'
 
-/**
- * Khung app theo docs/03-experience/prototype.html (hàm nav() và shell()): sidebar 248px có logo,
- * nhóm menu theo vai trò, ô tài khoản (hoặc ô đăng nhập cho khách) ở đáy; header có tiêu đề trang,
- * ô tìm khóa học (trang có handle.search) và menu tài khoản. CSS ở styles/shell.css, giữ tên class prototype.
- */
 
 interface NavItem {
   to: string
   icon: IconName
   label: string
-  /** Tiền tố đường dẫn làm mục này sáng lên (vd trang con của khóa học). */
   match: string[]
 }
 
@@ -85,7 +79,6 @@ function isActive(pathname: string, prefixes: string[]): boolean {
   return prefixes.some((p) => pathname === p || pathname.startsWith(`${p}/`))
 }
 
-/** Chữ viết tắt và màu avatar giống prototype (ini, tone). */
 const TONES = ['primary', 'success', 'warning', 'neutral'] as const
 function initials(name: string): string {
   return name
@@ -212,7 +205,6 @@ function AccountMenu({ name, role }: { name: string; role: ViewerRole }) {
   )
 }
 
-/** Thanh tab giữa header và nội dung (tabsBar của prototype). Tab sáng: tab có đường dẫn dài nhất khớp URL. */
 function TabBar({ items }: { items: TabItem[] }) {
   const { pathname } = useLocation()
   const active = items

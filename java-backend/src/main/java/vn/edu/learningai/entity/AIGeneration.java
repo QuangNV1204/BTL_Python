@@ -12,10 +12,6 @@ import vn.edu.learningai.common.enums.SourceType;
 
 import java.time.Instant;
 
-/**
- * Bản ghi một lần sinh nội dung bằng AI (bảng ai_generations): provenance + candidate đã validate.
- * Lesson/document/user giữ dạng ID vì entity của module lesson/identity chưa có trên develop.
- */
 @Entity
 @Getter
 @Setter

@@ -1,5 +1,3 @@
-/* Bộ icon chép từ docs/03-experience/prototype.html (nét 2px, 24×24) để giao diện giống prototype. */
-/* Thêm icon mới: thêm một dòng tên → nội dung SVG (chỉ path/circle..., không có thẻ <svg>). */
 export const ICON_PATHS = {
   alert: "<path d=\"M12 3 2 20h20Z\"/><path d=\"M12 10v4M12 17h.01\"/>",
   archive: "<rect x=\"3\" y=\"4\" width=\"18\" height=\"5\" rx=\"1\"/><path d=\"M5 9v10a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V9M10 13h4\"/>",

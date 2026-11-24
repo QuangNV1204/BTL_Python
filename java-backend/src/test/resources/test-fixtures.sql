@@ -1,5 +1,3 @@
--- Deterministic fixture for integration tests. Re-created before every test.
--- Fixed ids keep assertions readable; FK order matters.
 SET FOREIGN_KEY_CHECKS = 0;
 TRUNCATE TABLE student_answers;
 TRUNCATE TABLE quiz_attempts;
@@ -15,9 +13,6 @@ TRUNCATE TABLE categories;
 TRUNCATE TABLE users;
 SET FOREIGN_KEY_CHECKS = 1;
 
--- Password for every account below: DemoPass123!
--- bcrypt(10) hashes are real so tests can log in through the actual auth route
--- instead of faking identity with a header.
 INSERT INTO users (id, full_name, email, password_hash, role, is_active) VALUES
     (1, 'Admin',     'admin@test.local',     '$2a$10$VSsXvE5oyd2y1eYkTkf7TuWlVAaCU3JvgI6L9BF4L9zCtLjY1vPmC', 'ADMIN',   TRUE),
     (2, 'Teacher A', 'teacher.a@test.local', '$2a$10$nM6SRz8UPgRoNNkXjcaZ/eZ5ymLM8BezDhIZD3S88I/J7mZBR/Cia', 'TEACHER', TRUE),
@@ -35,8 +30,6 @@ INSERT INTO courses (id, teacher_id, category_id, title, description, price, is_
     (2, 2, 1, 'Khoa publish cua A', 'Mo ta', 0.00, TRUE,  NULL),
     (3, 3, 2, 'Khoa cua B',         'Mo ta', 100000.00, FALSE, NULL),
     (4, 3, 2, 'Khoa publish cua B', 'Mo ta SQL', 200000.00, TRUE, NULL),
-    -- Archived while still marked published: the marketplace must hide it, so
-    -- "published" alone is not a sufficient filter.
     (5, 3, 1, 'Khoa da archive',    'Mo ta', 0.00, TRUE, CURRENT_TIMESTAMP(6));
 
 INSERT INTO lessons (id, course_id, title, video_url, transcript_text, order_index) VALUES

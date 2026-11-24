@@ -100,7 +100,6 @@ test('logout-login-logout keeps final logout intent', () => environment(async (c
     return json({ id: 'A', role: 'STUDENT' })
   }
   const one = s.logout()
-  // Its HTTP response belongs to the old generation, so it must be discarded.
   const staleLogout = assert.rejects(one, { name: 'AbortError' })
   await started.promise
   const login = s.login({ email: 'A', password: 'test' })

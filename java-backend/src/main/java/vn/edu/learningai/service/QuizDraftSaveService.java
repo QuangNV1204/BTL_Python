@@ -64,7 +64,6 @@ public class QuizDraftSaveService {
                 throw new ApiException(ErrorCode.VALIDATION_ERROR,"Question id must belong to this quiz and occur once");
             }
         }
-        // Reuse established ownership/history/provenance validation within this one transaction.
         for (var question : current) if (!wanted.contains(question.getId())) quizService.deleteQuestion(question.getId());
         long base = Math.max(current.stream().mapToLong(q -> q.getOrderIndex()).max().orElse(-1),request.questions().size())+1;
         if (base+current.size()>Integer.MAX_VALUE) throw new ApiException(ErrorCode.INVALID_STATE,"Question order limit exceeded");

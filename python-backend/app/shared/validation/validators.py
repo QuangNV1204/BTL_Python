@@ -1,8 +1,3 @@
-"""Validator Pydantic sao hành vi Jakarta Validation của java-backend.
-
-Field name trả về trong ``details`` là snake_case như trên wire — Java đã đổi
-tên field qua PropertyNamingStrategy trước khi trả lỗi.
-"""
 
 from __future__ import annotations
 
@@ -14,7 +9,6 @@ _YOUTUBE_HOSTS = {"youtube.com", "www.youtube.com", "m.youtube.com"}
 
 
 def is_youtube_url(value: str) -> bool:
-    """Sao YouTubeUrlValidator.java: chỉ chấp nhận link YouTube hợp lệ."""
     try:
         parts = urlsplit(value.strip())
     except ValueError:
@@ -39,12 +33,10 @@ def _has_value_after(path: str, prefix: str) -> bool:
 
 
 def codepoint_length(value: str) -> int:
-    """Số code point như ``String.codePointCount`` (emoji tính là 1)."""
     return len(value)
 
 
 def truncate_to_codepoints(value: str, limit: int) -> str:
-    """Cắt theo code point; không cắt đôi cặp surrogate như AiGenerationService.truncate."""
     if len(value) <= limit:
         return value
     return value[:limit]
@@ -57,7 +49,6 @@ def normalize_optional_text(value: str | None) -> str | None:
 
 
 def parse_positive_id(value: str, field_name: str) -> int:
-    """Path param BIGINT dạng string, sao ``positiveLong`` của controller Java."""
     from app.shared.error.codes import ErrorCode
     from app.shared.error.exceptions import ApiException
 

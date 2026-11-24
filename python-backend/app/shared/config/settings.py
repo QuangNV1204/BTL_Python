@@ -1,12 +1,3 @@
-"""Cấu hình ứng dụng, đọc từ biến môi trường giống java-backend/.
-
-Giữ cùng tên biến (DBMS_*, JWT_*, AI_*, MAIL_*, APP_*) để frontend và .env chỉ cần
-đổi cổng khi chuyển backend. Ngoài ra hỗ trợ DATABASE_URL của SQLAlchemy.
-
-Thứ tự đọc: biến môi trường > ``python-backend/.env`` > ``java-backend/.env`` >
-giá trị mặc định. Như vậy chạy được ngay bằng .env sẵn có của Java mà không phải
-copy sang — đúng tinh thần "cùng biến môi trường" của .env.example.
-"""
 
 from __future__ import annotations
 
@@ -22,8 +13,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 _PACKAGE_ROOT = Path(__file__).resolve().parents[3]
 _REPO_ROOT = _PACKAGE_ROOT.parent
 
-# pydantic-settings: file đứng SAU ghi đè file đứng trước, nên file local của
-# python-backend đặt cuối để ưu tiên cao nhất (nhưng vẫn thấp hơn biến môi trường).
+
 _ENV_FILES = (
     _REPO_ROOT / "java-backend" / ".env",
     _PACKAGE_ROOT / ".env",
@@ -38,17 +28,17 @@ class Settings(BaseSettings):
         env_file_encoding="utf-8",
     )
 
-    # server.port của application.yaml → SERVER_PORT; PORT để tương thích host PaaS.
+
     server_port: int = Field(default=8080, validation_alias=AliasChoices("SERVER_PORT", "PORT"))
 
-    # Nguồn DB: DATABASE_URL trực tiếp, hoặc bộ ba DBMS_* của java-backend/.env.
+
     dbms_connection: str | None = None
     dbms_username: str | None = None
     dbms_password: str | None = None
     database_url: str | None = None
 
     jwt_signing_key: str = ""
-    # Cùng mặc định với application.yaml (15 phút / 7 ngày).
+
     jwt_access_ttl_ms: int = 900_000
     jwt_refresh_ttl_ms: int = 604_800_000
 
@@ -59,9 +49,9 @@ class Settings(BaseSettings):
     app_storage_location: Path = Path("./uploads")
     app_storage_public_base_url: str = "/api/v1/files"
     lesson_document_storage: Path = Path("./data/lesson-documents")
-    # app.upload.max-thumbnail-bytes trong ThumbnailService.
+
     max_thumbnail_bytes: int = 5 * 1024 * 1024
-    # app.storage.cleanup-delay-ms trong DocumentCleanupService.retryPending.
+
     cleanup_delay_ms: int = 60_000
 
     ai_provider: str = "mock"
@@ -77,7 +67,7 @@ class Settings(BaseSettings):
     mail_username: str = ""
     mail_password: str = ""
 
-    # Nhiều origin cách nhau bằng dấu phẩy (không phải JSON như mặc định của pydantic-settings).
+
     cors_origins: str = "http://localhost:5173"
 
     @property
@@ -106,7 +96,6 @@ class Settings(BaseSettings):
 
     @property
     def signing_key_bytes(self) -> bytes:
-        """jjwt dùng Base64.getDecoder().decode(signingKey); giữ đúng cách giải mã đó."""
         raw = (self.jwt_signing_key or "").strip()
         if not raw:
             raise RuntimeError("JWT_SIGNING_KEY phải được cấu hình")

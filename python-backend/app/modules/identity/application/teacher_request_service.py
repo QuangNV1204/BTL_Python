@@ -1,4 +1,3 @@
-"""Yêu cầu trở thành teacher và phê duyệt — sao TeacherRequestService.java."""
 
 from __future__ import annotations
 
@@ -142,7 +141,6 @@ class TeacherRequestService:
 
 
 def _order_by(sort: str | None) -> tuple:
-    """Sao normalizeSort: whitelist field, mặc định created_at desc, id desc."""
     mapping = {
         "created_at": TeacherRequest.created_at,
         "createdAt": TeacherRequest.created_at,
@@ -154,7 +152,7 @@ def _order_by(sort: str | None) -> tuple:
     if not sort:
         return (TeacherRequest.created_at.desc(), TeacherRequest.id.desc())
 
-    # Spring dùng sort=created_at,desc — các order nối bằng dấu phẩy theo cặp.
+
     parts = [part.strip() for part in sort.split(",") if part.strip()]
     clauses = []
     seen_id = False

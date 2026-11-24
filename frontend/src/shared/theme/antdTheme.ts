@@ -1,16 +1,10 @@
 import { theme as antdTheme, type ThemeConfig } from 'antd'
 
-/**
- * Theme Ant Design khớp design tokens của prototype (src/shared/styles/tokens.css,
- * chép từ docs/03-experience/prototype.html). Đổi màu thì sửa cả hai nơi.
- */
 
-/** Dùng trong style của component: luôn theo chế độ sáng/tối hiện tại vì là biến CSS. */
 export const cssVar = {
   primary: 'var(--primary)',
   primarySoft: 'var(--primary-soft)',
   primaryText: 'var(--primary-text)',
-  /** Mọi thứ liên quan AI: nút "Sinh bằng AI", badge "AI tạo", banner bản nháp AI (design-brief mục 3). */
   ai: 'var(--ai)',
   aiSoft: 'var(--ai-soft)',
   aiText: 'var(--ai-text)',
@@ -71,7 +65,6 @@ const darkTokens: ThemeConfig['token'] = {
   colorText: '#F3F4F6',
   colorTextSecondary: '#9CA3AF',
   colorTextTertiary: '#8B95A7',
-  // Nút primary nền sáng (#818CF8) nên chữ tối, như --on-primary của prototype.
   colorTextLightSolid: '#0B1120',
 }
 

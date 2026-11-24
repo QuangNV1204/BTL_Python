@@ -1,4 +1,3 @@
-"""Enum dùng trên wire và trong DB, giữ đúng common/enums/*.java."""
 
 from __future__ import annotations
 

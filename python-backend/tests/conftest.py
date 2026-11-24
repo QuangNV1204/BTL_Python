@@ -1,8 +1,3 @@
-"""Fixture test: SQLite tạm với schema dựng từ app.shared.database.models.
-
-Chỉ dùng cho test — production luôn dựa trên migration SQL chung của
-database/migrations. SQLite ở đây giúp chạy test nhanh, không cần MySQL.
-"""
 
 from __future__ import annotations
 
@@ -26,14 +21,14 @@ os.environ.setdefault("LESSON_DOCUMENT_STORAGE", str(_TMP / "documents"))
 os.environ.setdefault("AI_PROVIDER", "mock")
 os.environ.setdefault("CLEANUP_DELAY_MS", "0")
 
-from app.shared.database.base import Base, utcnow  # noqa: E402
-from app.shared.database.models import (  # noqa: E402
+from app.shared.database.base import Base, utcnow
+from app.shared.database.models import (
     Category,
     Course,
     Lesson,
     User,
 )
-from app.shared.database.session import SessionLocal, engine  # noqa: E402
+from app.shared.database.session import SessionLocal, engine
 
 
 @pytest.fixture(autouse=True)

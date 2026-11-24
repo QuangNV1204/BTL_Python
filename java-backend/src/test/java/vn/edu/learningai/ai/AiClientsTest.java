@@ -11,7 +11,6 @@ import java.util.List;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-/** MockAIClient sinh output qua được validator; LlmAIClient đọc đúng response Chat Completions. */
 class AiClientsTest {
 
     private static final String SOURCE = """

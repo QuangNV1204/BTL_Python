@@ -1,4 +1,3 @@
-"""Schema attempt — SubmitAttemptRequest và response của Java."""
 
 from __future__ import annotations
 

@@ -1,9 +1,3 @@
-"""Dependency dùng chung cho router: DB session, principal và kiểm tra role.
-
-Mỗi request một Session; commit khi response 2xx, rollback khi lỗi — tương đương
-transaction của một request trong Spring. Một số handler cần commit/rollback sớm
-(cookie, 201) thì gọi thẳng ``session.commit()``.
-"""
 
 from __future__ import annotations
 
@@ -47,7 +41,6 @@ def get_settings_dep() -> Settings:
 
 
 def require_roles(*roles: UserRole):
-    """Dependency nhà máy: chưa đăng nhập → 401, sai role → 403 (như SecurityConfig)."""
 
     def dependency(request: Request) -> AuthenticatedUser:
         principal = principal_of(request)
@@ -80,7 +73,6 @@ def require_admin(request: Request) -> AuthenticatedUser:
 
 
 def current_db_user(session: Session, principal: AuthenticatedUser) -> User:
-    """SecurityHelper.getCurrentUser: đọc lại user và từ chối tài khoản đã khóa."""
     user = session.get(User, principal.user_id)
     if user is None:
         raise ApiException(ErrorCode.UNAUTHENTICATED)

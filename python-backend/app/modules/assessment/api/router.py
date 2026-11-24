@@ -1,8 +1,3 @@
-"""Router quiz/question/draft — khớp QuizController + QuizDraftSaveController.
-
-Body được parse thủ công qua ``from_json`` để giữ đúng thông điệp và các quy tắc
-nghiêm ngặt của DTO Java (từ chối field lạ, BIGINT dạng string).
-"""
 
 from __future__ import annotations
 
@@ -37,21 +32,20 @@ def _service(policy: LessonAccessPolicy = Depends(_policy)) -> QuizService:
     return QuizService(_session_of(policy), policy)
 
 
-def _session_of(policy: LessonAccessPolicy) -> Session:  # noqa: ANN001
-    return policy._session  # noqa: SLF001 - cả hai dùng chung Session của request
+def _session_of(policy: LessonAccessPolicy) -> Session:
+    return policy._session
 
 
 Service = Annotated[QuizService, Depends(_service)]
 
 
 def _draft_service(service: Service) -> QuizDraftSaveService:
-    return QuizDraftSaveService(_session_of(service._policy), service)  # noqa: SLF001
+    return QuizDraftSaveService(_session_of(service._policy), service)
 
 
 DraftService = Annotated[QuizDraftSaveService, Depends(_draft_service)]
 
 
-# ------------------------------------------------------------------- quizzes
 @router.post(
     "/lessons/{lesson_id}/quizzes",
     status_code=status.HTTP_201_CREATED,
@@ -132,7 +126,6 @@ def change_publication(
     )
 
 
-# ------------------------------------------------------------------ questions
 @router.post("/quizzes/{quiz_id}/questions", status_code=status.HTTP_201_CREATED)
 def add_question(
     quiz_id: str,
@@ -175,7 +168,6 @@ def delete_question(
     return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 
-# ---------------------------------------------------------------- draft save
 @router.put("/quizzes/{quiz_id}/draft", response_model=QuizAuthorResponse)
 def save_draft(
     quiz_id: str,

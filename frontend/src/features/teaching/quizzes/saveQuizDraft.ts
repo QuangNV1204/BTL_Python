@@ -13,8 +13,6 @@ export function questionPayload(question: QuizQuestionAuthor, index: number): Qu
   }
 }
 
-// One saver per mounted editor. On ANY failure retain the exact snapshot/key;
-// the next explicit save replays it before accepting edits/new IDs.
 export function createDraftSaver() {
   let pending: { quizId: string; body: Parameters<typeof saveDraftSnapshot>[1] } | undefined
   return async (quizId: string, title: string, questions: QuizQuestionAuthor[]) => {
@@ -29,7 +27,6 @@ export function createDraftSaver() {
       pending = undefined
       return saved
     } catch (error) {
-      // Rejected payloads did not commit. Network/5xx are ambiguous: replay exact key.
       if (isApiError(error) && error.status >= 400 && error.status < 500) pending = undefined
       throw error
     }

@@ -1,4 +1,3 @@
-"""Ghi danh và thành viên khoá học — sao EnrollmentService.java."""
 
 from __future__ import annotations
 
@@ -26,7 +25,6 @@ class EnrollmentService:
         self._session = session
 
     def enroll(self, course_id: int, actor: AuthenticatedUser) -> tuple[dict, bool]:
-        """Trả (payload, created) — created=False khi đã ghi danh từ trước (200)."""
         if actor.role is not UserRole.STUDENT:
             raise ApiException(ErrorCode.FORBIDDEN, "Only students can enroll in courses")
 
@@ -36,7 +34,7 @@ class EnrollmentService:
             or not course.is_published
             or course.archived_at is not None
         ):
-            # Không tiết lộ khóa học chưa publish tồn tại.
+
             raise ApiException(ErrorCode.NOT_FOUND, "Course not found")
         if course.price is not None and course.price > Decimal("0"):
             raise ApiException(
@@ -55,7 +53,7 @@ class EnrollmentService:
         try:
             self._session.flush()
         except IntegrityError:
-            # Tạo đồng thời: người thắng đã insert; đọc lại bản ghi đó.
+
             logger.debug("Concurrent enrollment for course %s student %s", course_id, actor.user_id)
             self._session.rollback()
             winner = self._member(course_id, actor.user_id)
@@ -95,7 +93,7 @@ class EnrollmentService:
                 total_students=self._enrollment_count(course.id),
                 lesson_count=self._lesson_count(course.id),
             ).model_dump(mode="json")
-            # CourseEnrollmentResponse @JsonUnwrapped course + enrolled_at
+
             payload["enrolled_at"] = _instant(enrolled_at)
             items.append(payload)
         return page_response(items, page, page_size, total)
@@ -137,7 +135,7 @@ class EnrollmentService:
         ]
         return page_response(items, page, page_size, total)
 
-    # -------------------------------------------------------------- internals
+
     def _member(self, course_id: int, student_id: int) -> CourseMember | None:
         return self._session.scalars(
             select(CourseMember).where(
@@ -173,7 +171,7 @@ class EnrollmentService:
         )
 
 
-def _instant(value) -> str | None:  # noqa: ANN001
+def _instant(value) -> str | None:
     from app.shared.http.serialization import format_instant
 
     return format_instant(value)

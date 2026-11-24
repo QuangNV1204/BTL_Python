@@ -1,4 +1,3 @@
-"""Category — sao CategoryService.java."""
 
 from __future__ import annotations
 
@@ -61,7 +60,7 @@ class CategoryService:
         self._session.add(category)
         try:
             self._session.flush()
-        except IntegrityError as exc:  # unique name thua race
+        except IntegrityError as exc:
             raise ApiException(ErrorCode.INVALID_STATE, "Category name already exists") from exc
         return category_response(category)
 
@@ -96,7 +95,7 @@ class CategoryService:
         self._session.delete(category)
         try:
             self._session.flush()
-        except IntegrityError as exc:  # FK 1451: category đang được course dùng
+        except IntegrityError as exc:
             raise ApiException(
                 ErrorCode.RESOURCE_IN_USE, "Category is used by a course"
             ) from exc

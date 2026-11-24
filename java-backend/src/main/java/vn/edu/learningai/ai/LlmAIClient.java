@@ -19,12 +19,6 @@ import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 
-/**
- * Gọi Hệ thống AI qua HTTPS theo định dạng OpenAI Chat Completions ({@code POST {baseUrl}/chat/completions}).
- * Cùng một code dùng được cho OpenRouter (Claude, GPT, Gemini, model free…), OpenAI, endpoint tương thích
- * OpenAI của Anthropic/Gemini, Ollama… — chỉ đổi AI_BASE_URL / AI_MODEL / AI_API_KEY.
- * Không bật response_format vì nhiều model không hỗ trợ; service tự validate JSON.
- */
 @Slf4j
 public class LlmAIClient implements AIClient {
 
@@ -90,7 +84,6 @@ public class LlmAIClient implements AIClient {
         return extractContent(raw);
     }
 
-    /** Lấy choices[0].message.content; output bị cắt (finish_reason=length) coi là không hợp lệ. */
     String extractContent(String raw) {
         JsonNode root;
         try {
@@ -101,7 +94,6 @@ public class LlmAIClient implements AIClient {
         if (root == null || !root.isObject()) {
             throw new AIClientException(AIClientException.Reason.PROVIDER_ERROR, "AI provider returned empty body");
         }
-        // OpenRouter có thể trả HTTP 200 kèm {"error": {...}}
         if (root.has("error") && !root.get("error").isNull()) {
             log.warn("AI provider error body: {}", abbreviate(root.get("error").toString()));
             throw new AIClientException(AIClientException.Reason.PROVIDER_ERROR, "AI provider returned an error");

@@ -1,8 +1,3 @@
-"""Entry point FastAPI — tương đương LearningaiApplication + SecurityConfig.
-
-Chạy: ``uvicorn app.main:app --port 8080`` (hoặc ``python -m app.main``).
-Cùng route, cùng mã lỗi, cùng contract JSON với java-backend.
-"""
 
 from __future__ import annotations
 
@@ -42,13 +37,12 @@ logger = logging.getLogger("learningai")
 
 
 async def _cleanup_loop(interval_seconds: int) -> None:
-    """Quét document_cleanup_jobs định kỳ (DocumentCleanupService.retryPending)."""
     storage = DocumentStorage(get_settings())
     while True:
         await asyncio.sleep(interval_seconds)
         try:
             await asyncio.to_thread(retry_pending, storage)
-        except Exception:  # noqa: BLE001 - job nền không được chết
+        except Exception:
             logger.error("Document cleanup sweep failed", exc_info=True)
 
 
@@ -75,7 +69,7 @@ def create_app() -> FastAPI:
         openapi_url="/openapi.json",
     )
 
-    # Tài nguyên dùng chung cho mọi request (thay cho bean của Spring).
+
     application.state.settings = settings
     application.state.jwt_service = JwtService(settings)
     application.state.ai_client = build_ai_client(settings)
@@ -83,7 +77,7 @@ def create_app() -> FastAPI:
     application.state.document_storage = DocumentStorage(settings)
 
     install_error_handlers(application)
-    # Thứ tự middleware: request id ngoài cùng để mọi lỗi đều có header.
+
     application.add_middleware(
         AuthMiddleware,
         jwt_service=application.state.jwt_service,
@@ -120,7 +114,6 @@ def create_app() -> FastAPI:
 
     @application.get("/", include_in_schema=False)
     def root() -> RedirectResponse:
-        """Gốc không phải API: chuyển tới tài liệu để mở nhầm không bị 404."""
         return RedirectResponse(url="/docs")
 
     return application
@@ -130,16 +123,15 @@ app = create_app()
 
 
 def main() -> None:
-    """Entry point cho ``learningai`` / ``python -m app.main``."""
     import uvicorn
 
     uvicorn.run(
         "app.main:app",
-        host="0.0.0.0",  # noqa: S104 - chạy trong container/dev
+        host="0.0.0.0",
         port=get_settings().server_port,
         reload=False,
     )
 
 
-if __name__ == "__main__":  # pragma: no cover
+if __name__ == "__main__":
     main()

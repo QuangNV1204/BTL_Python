@@ -1,7 +1,3 @@
-"""Thống kê theo quyền — sao StatisticsService.java.
-
-SQL giữ nguyên; số liệu chỉ tính dữ liệu PUBLISHED/SUBMITTED như Java.
-"""
 
 from __future__ import annotations
 

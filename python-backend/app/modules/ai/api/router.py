@@ -1,4 +1,3 @@
-"""Router AI — khớp AiController.java (chỉ TEACHER/ADMIN, owner của lesson do service kiểm)."""
 
 from __future__ import annotations
 

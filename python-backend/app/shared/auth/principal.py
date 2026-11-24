@@ -1,9 +1,3 @@
-"""Danh tính của request, tương ứng security/AuthenticatedUser.java.
-
-JWT của java-backend chỉ chứa subject = email và claim ``role``. Mỗi request có
-Bearer token đều đọc lại user từ DB (JwtAuthenticationFilter.loadUserByUsername),
-nên trạng thái active/email_verified luôn là dữ liệu hiện tại.
-"""
 
 from __future__ import annotations
 
@@ -45,7 +39,6 @@ class AuthenticatedUser:
 
 
 def principal_of(request: Request) -> AuthenticatedUser:
-    """Lấy principal đã gắn bởi auth dependency; thiếu thì 401 UNAUTHENTICATED."""
     principal = getattr(request.state, "principal", None)
     if principal is None:
         raise ApiException(ErrorCode.UNAUTHENTICATED)

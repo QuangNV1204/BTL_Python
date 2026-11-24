@@ -1,4 +1,3 @@
-"""Làm bài, chấm điểm, xem lại và lịch sử — sao AttemptService.java."""
 
 from __future__ import annotations
 
@@ -47,7 +46,7 @@ class AttemptService:
     def __init__(self, session: Session) -> None:
         self._session = session
 
-    # ----------------------------------------------------------------- history
+
     def history(
         self,
         actor: AuthenticatedUser,
@@ -103,7 +102,7 @@ class AttemptService:
         ]
         return page_response(items, page, page_size, total)
 
-    # ------------------------------------------------------------------- start
+
     def start(self, quiz_id: int, actor: AuthenticatedUser) -> StartResult:
         student = self._current_student(actor)
         quiz = self._session.scalars(
@@ -148,7 +147,7 @@ class AttemptService:
         self._session.flush()
         return StartResult(_to_attempt(attempt), True)
 
-    # ------------------------------------------------------------------ submit
+
     def submit(
         self, attempt_id: int, request: SubmitAttemptRequest, actor: AuthenticatedUser
     ) -> AttemptResultResponse:
@@ -196,7 +195,7 @@ class AttemptService:
         self._session.flush()
         return self._to_result(attempt, quiz, questions, options_by_question, stored)
 
-    # --------------------------------------------------------------------- get
+
     def get(self, attempt_id: int, actor: AuthenticatedUser) -> dict:
         student = self._current_student(actor)
         attempt = self._session.get(QuizAttempt, attempt_id)
@@ -213,7 +212,7 @@ class AttemptService:
         result = self._stored_result(attempt, quiz, questions, self._load_options(questions))
         return result.model_dump(mode="json")
 
-    # --------------------------------------------------------------- internals
+
     def _stored_result(
         self,
         attempt: QuizAttempt,

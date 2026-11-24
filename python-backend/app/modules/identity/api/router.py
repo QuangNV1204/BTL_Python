@@ -1,4 +1,3 @@
-"""Router identity: auth, users, teacher-requests — khớp SecurityConfig.java."""
 
 from __future__ import annotations
 
@@ -54,7 +53,6 @@ router = APIRouter(prefix="/api/v1", tags=["identity"])
 
 @dataclass
 class _Identity:
-    """Gom các service phụ thuộc Session/config của một request."""
 
     auth: AuthService
     email_verification: EmailVerificationService
@@ -84,7 +82,6 @@ def _services(request: Request, session: Session = Depends(get_db)) -> _Identity
 Identity = Annotated[_Identity, Depends(_services)]
 
 
-# ---------------------------------------------------------------- auth (public)
 @router.post(
     "/auth/register",
     status_code=status.HTTP_201_CREATED,
@@ -148,7 +145,6 @@ def logout(request: Request, services: Identity, response: Response) -> Response
     return response
 
 
-# ------------------------------------------------------- auth (cần đăng nhập)
 @router.post("/auth/change-password", status_code=status.HTTP_204_NO_CONTENT)
 def change_password(
     payload: ChangePasswordRequest, request: Request, services: Identity
@@ -165,7 +161,6 @@ def logout_all(request: Request, services: Identity, response: Response) -> Resp
     return response
 
 
-# ----------------------------------------------------------------------- users
 @router.get("/users/me", response_model=UserResponse)
 def get_current_user(
     request: Request, services: Identity
@@ -202,7 +197,6 @@ def get_users(
     return services.users.get_users(email, page, page_size, sort)
 
 
-# ------------------------------------------------------------ teacher-requests
 @router.post(
     "/teacher-requests",
     status_code=status.HTTP_201_CREATED,

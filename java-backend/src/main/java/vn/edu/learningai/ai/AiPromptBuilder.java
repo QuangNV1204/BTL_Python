@@ -3,11 +3,6 @@ package vn.edu.learningai.ai;
 import org.springframework.stereotype.Component;
 import vn.edu.learningai.common.enums.Difficulty;
 
-/**
- * Tạo prompt gửi AIClient. Ba dòng đầu (TASK/COUNT/DIFFICULTY) là header cố định: model đọc như yêu cầu,
- * MockAIClient đọc để sinh đúng loại và số lượng. Đổi nội dung prompt thì tăng *_PROMPT_VERSION
- * (ghi vào ai_generations.prompt_version để tra vết).
- */
 @Component
 public class AiPromptBuilder {
 
@@ -58,7 +53,6 @@ public class AiPromptBuilder {
             """.formatted(count, count, sanitize(sourceText));
     }
 
-    /** Không để nội dung bài học tự đóng thẻ source (prompt injection đơn giản). */
     private static String sanitize(String sourceText) {
         return sourceText.replace("</source>", "</ source>").replace("<source>", "< source>");
     }

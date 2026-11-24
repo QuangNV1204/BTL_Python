@@ -1,4 +1,3 @@
-"""Tải thumbnail công khai — khớp FileController.java (GET /api/v1/files/{key})."""
 
 from __future__ import annotations
 
@@ -23,7 +22,7 @@ def download_thumbnail(
     request: Request,
     session: Annotated[Session, Depends(get_db)],
 ) -> Response:
-    # Chỉ phục vụ file đang là thumbnail của một khóa học.
+
     exists = session.scalar(
         select(func.count())
         .select_from(Course)
@@ -34,7 +33,7 @@ def download_thumbnail(
 
     storage = request.app.state.file_storage
     content = storage.load(storage_key)
-    if content is None:  # pragma: no cover - storage.load ném StorageException
+    if content is None:
         raise ApiException(ErrorCode.NOT_FOUND, "File not found")
 
     return Response(

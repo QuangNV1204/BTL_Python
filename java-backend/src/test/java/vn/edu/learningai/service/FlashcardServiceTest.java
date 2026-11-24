@@ -47,7 +47,6 @@ class FlashcardServiceTest {
     void setUp() {
         repository = mock(FlashcardRepository.class);
         access = mock(LessonAccessPolicy.class);
-        // Dự án dùng mock-maker-proxy (chỉ mock interface); class thì chọn riêng mock maker kiểu lớp con.
         aiGenerationService = mock(AiGenerationService.class, withSettings().mockMaker(MockMakers.SUBCLASS));
         when(repository.save(any())).thenAnswer(inv -> {
             Flashcard f = inv.getArgument(0);
@@ -92,7 +91,6 @@ class FlashcardServiceTest {
         assertThat(service.changeStatus(50L, TEACHER, FlashcardStatus.PUBLISHED).status())
             .isEqualTo(FlashcardStatus.PUBLISHED);
         assertThat(f.getPublishedAt()).isNotNull();
-        // publish lặp lại trả dữ liệu cũ
         assertThat(service.publish(50L, TEACHER).status()).isEqualTo(FlashcardStatus.PUBLISHED);
 
         assertThat(service.changeStatus(50L, TEACHER, FlashcardStatus.CLOSED).status())

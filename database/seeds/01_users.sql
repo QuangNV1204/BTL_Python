@@ -1,8 +1,3 @@
-
--- Password: DemoPass123!
-
-
-
 INSERT INTO users (full_name, email, password_hash, role, is_active, email_verified_at, created_at, updated_at)
 VALUES
     ('Demo Admin', 'admin.demo@example.test',

@@ -1,4 +1,3 @@
-"""Router enrollment — khớp EnrollmentController.java."""
 
 from __future__ import annotations
 

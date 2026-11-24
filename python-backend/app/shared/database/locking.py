@@ -1,8 +1,3 @@
-"""Ghép mệnh đề khóa hàng cho raw SQL.
-
-MySQL cần ``FOR UPDATE`` / ``FOR UPDATE SKIP LOCKED`` để đúng semantics của java-backend.
-SQLite (dùng trong test) không hỗ trợ cú pháp này, nên bỏ qua khi dialect là sqlite.
-"""
 
 from __future__ import annotations
 

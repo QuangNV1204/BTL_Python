@@ -50,7 +50,6 @@ export function LearnFlashcardsPage() {
         setFlipped(false)
       }
       if (event.code === 'Space') {
-        // preventDefault chặn nút đang focus tự click thêm một lần.
         event.preventDefault()
         if (event.repeat) return
         setFlipped(value => !value)

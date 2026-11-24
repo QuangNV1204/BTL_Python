@@ -7,9 +7,7 @@ export type AiDraft =
     generation_id: string
     source_truncated: boolean
     items: QuizQuestion[]
-    /** Quiz đã tạo; Lưu tiếp sẽ dùng ID này, tránh tạo quiz trùng. */
     quiz_id?: string
-    /** Số câu đã lưu; Lưu tiếp bắt đầu từ câu kế tiếp. */
     saved_count: number
     request?: GenerationRequest
     title?: string
@@ -19,7 +17,6 @@ export type AiDraft =
     generation_id: string
     source_truncated: boolean
     items: { front_text: string; back_text: string }[]
-    /** Số thẻ đã lưu; Lưu tiếp bắt đầu từ thẻ kế tiếp. */
     saved_count: number
     request?: GenerationRequest
   }
@@ -38,7 +35,6 @@ export function writeDraft(lessonId: string, draft: AiDraft): void {
   try {
     sessionStorage.setItem(key(lessonId), JSON.stringify(draft))
   } catch {
-    // The in-memory preview remains usable when browser storage is unavailable.
   }
 }
 
@@ -46,7 +42,6 @@ export function clearDraft(lessonId: string): void {
   try {
     sessionStorage.removeItem(key(lessonId))
   } catch {
-    // Leaving the preview must still work with blocked browser storage.
   }
 }
 

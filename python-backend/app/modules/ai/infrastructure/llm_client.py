@@ -1,9 +1,3 @@
-"""Gọi AI qua HTTP theo định dạng OpenAI Chat Completions, sao LlmAIClient.java.
-
-``POST {base_url}/chat/completions`` — dùng được cho OpenRouter, OpenAI, NVIDIA
-integrate, Ollama… chỉ đổi AI_BASE_URL / AI_MODEL / AI_API_KEY. Không bật
-response_format vì nhiều model không hỗ trợ; service tự validate JSON.
-"""
 
 from __future__ import annotations
 
@@ -84,7 +78,6 @@ class LlmAIClient(AIClient):
 
     @staticmethod
     def _extract_content(raw: str) -> str:
-        """Lấy choices[0].message.content; finish_reason=length coi là output không hợp lệ."""
         try:
             root = json.loads(raw or "")
         except json.JSONDecodeError as exc:
@@ -95,7 +88,7 @@ class LlmAIClient(AIClient):
             raise AIClientException(
                 AiFailureReason.PROVIDER_ERROR, "AI provider returned empty body"
             )
-        # OpenRouter có thể trả HTTP 200 kèm {"error": {...}}
+
         if root.get("error") is not None:
             logger.warning("AI provider error body: %s", _abbreviate(json.dumps(root["error"])))
             raise AIClientException(

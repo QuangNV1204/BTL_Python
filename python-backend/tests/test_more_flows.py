@@ -1,4 +1,3 @@
-"""Test các luồng còn lại: teacher request, flashcard, draft-save, statistics, tài liệu."""
 
 from __future__ import annotations
 
@@ -17,7 +16,6 @@ from tests.conftest import (
 )
 
 
-# ------------------------------------------------------------ teacher requests
 def test_teacher_request_approval_promotes_student(client):
     with SessionLocal() as db:
         make_user(db, email="admin2@example.com", role="ADMIN")
@@ -68,11 +66,10 @@ def test_admin_cannot_approve_own_request(client):
     response = client.post(
         "/api/v1/teacher-requests", json={"reason": "Tự duyệt"}, headers=auth(token)
     )
-    # ADMIN không phải STUDENT → route yêu cầu role STUDENT.
+
     assert response.status_code == 403
 
 
-# ------------------------------------------------------------------ flashcards
 def test_flashcard_lifecycle_and_student_visibility(client):
     with SessionLocal() as db:
         teacher = make_user(db, email="fteacher@example.com", role="TEACHER")
@@ -113,7 +110,7 @@ def test_flashcard_lifecycle_and_student_visibility(client):
     )
     assert visible.json()["total"] == 1
 
-    # Published là bất biến: không sửa được nữa.
+
     edit = client.patch(
         f"/api/v1/flashcards/{card_id}",
         json={"front_text": "Đổi"},
@@ -154,7 +151,6 @@ def test_flashcard_publication_rejects_draft_target(client):
     assert response.json()["details"][0]["field"] == "status"
 
 
-# ------------------------------------------------------------------ draft save
 def test_draft_save_is_idempotent_by_request_id(client):
     with SessionLocal() as db:
         teacher = make_user(db, email="dteacher@example.com", role="TEACHER")
@@ -245,7 +241,6 @@ def test_draft_save_requires_order_index_to_match_position(client):
     assert response.json()["message"] == "Question order_index must match array position"
 
 
-# ------------------------------------------------------------------ statistics
 def test_course_statistics_scoped_to_owner(client):
     with SessionLocal() as db:
         teacher = make_user(db, email="steacher@example.com", role="TEACHER")
@@ -288,7 +283,6 @@ def test_system_statistics_requires_admin(client):
     assert denied.status_code == 403
 
 
-# -------------------------------------------------------------------- documents
 def test_document_upload_extracts_text_and_downloads(client):
     with SessionLocal() as db:
         teacher = make_user(db, email="docteacher@example.com", role="TEACHER")
@@ -358,7 +352,6 @@ def test_lesson_with_quiz_content_cannot_be_deleted(client):
     assert response.json()["code"] == "INVALID_STATE"
 
 
-# ---------------------------------------------------------------- users admin
 def test_admin_lists_users_with_pagination(client):
     with SessionLocal() as db:
         make_user(db, email="listadmin@example.com", role="ADMIN")
@@ -400,7 +393,7 @@ def test_profile_update_and_status_lock(client):
         headers=auth(admin_token),
     )
     assert locked.status_code == 200
-    # Access token cũ không dùng được vì middleware thấy tài khoản đã khóa.
+
     denied = client.get("/api/v1/users/me", headers=auth(token))
     assert denied.status_code == 403
     assert denied.json()["code"] == "ACCOUNT_INACTIVE"

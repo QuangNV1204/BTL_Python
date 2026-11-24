@@ -1,8 +1,3 @@
-"""Lưu toàn bộ draft quiz có idempotency — sao QuizDraftSaveService.java.
-
-Receipt ``quiz_draft_save_receipts`` (V9) ghi theo (quiz_id, actor_id, request_id):
-gọi lại cùng request_id + cùng payload trả nguyên response cũ; khác payload → 409.
-"""
 
 from __future__ import annotations
 
@@ -69,10 +64,10 @@ class QuizDraftSaveService:
 
         if quiz.status != QuizStatus.DRAFT.value:
             raise ApiException(ErrorCode.INVALID_STATE, "Only DRAFT quizzes can be changed")
-        if self._quizzes._has_learning_history(quiz_id):  # noqa: SLF001 - cùng module
+        if self._quizzes._has_learning_history(quiz_id):
             raise ApiException(ErrorCode.RESOURCE_IN_USE, "Quiz has learning history")
 
-        current = self._quizzes._questions(quiz_id)  # noqa: SLF001
+        current = self._quizzes._questions(quiz_id)
         existing_ids = {question.id for question in current}
         wanted: set[int] = set()
         for item in request.questions:
@@ -85,12 +80,12 @@ class QuizDraftSaveService:
                     )
                 wanted.add(item.id)
 
-        # Dùng lại validate ownership/history/provenance của QuizService trong cùng transaction.
+
         for question in current:
             if question.id not in wanted:
                 self._quizzes.delete_question(question.id, actor)
 
-        # Đẩy câu giữ lại ra ngoài khoảng để nhường order_index cho payload mới.
+
         base = (
             max(
                 max((question.order_index for question in current), default=-1),
@@ -135,13 +130,12 @@ class QuizDraftSaveService:
         return result
 
     def _course_teacher_id(self, lesson_id: int) -> int | None:
-        return self._quizzes._policy.course_teacher_id(  # noqa: SLF001
-            self._quizzes._policy.lesson_context(lesson_id).course_id  # noqa: SLF001
+        return self._quizzes._policy.course_teacher_id(
+            self._quizzes._policy.lesson_context(lesson_id).course_id
         )
 
 
 def _canonical_request(request: SaveQuizDraftRequest) -> str:
-    """Hash payload ổn định: đúng các field đã parse, không phụ thuộc thứ tự dict."""
     payload = {
         "request_id": request.request_id,
         "title": request.title,

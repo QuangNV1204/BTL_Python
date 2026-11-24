@@ -1,4 +1,3 @@
-"""Quiz, question, option, publication — sao QuizService.java."""
 
 from __future__ import annotations
 
@@ -43,7 +42,7 @@ class QuizService:
         self._session = session
         self._policy = policy
 
-    # ------------------------------------------------------------------ create
+
     def create(self, lesson_id: int, request: CreateQuizRequest, actor: AuthenticatedUser) -> QuizAuthorResponse:
         lesson = self._policy.lesson_context(lesson_id)
         if not self._is_manager(actor, lesson.course_id):
@@ -119,7 +118,7 @@ class QuizService:
             return quiz_author_response(quiz, questions, options)
         return quiz_student_response(quiz, questions, options)
 
-    # ------------------------------------------------------------------ update
+
     def update(self, quiz_id: int, request: UpdateQuizRequest, actor: AuthenticatedUser) -> QuizAuthorResponse:
         quiz = self._managed_draft(quiz_id, actor)
         if request.generation_id is not None:
@@ -153,7 +152,7 @@ class QuizService:
                 ) from exc
             raise
 
-    # ---------------------------------------------------------------- question
+
     def add_question(self, quiz_id: int, request: WriteQuestionRequest, actor: AuthenticatedUser):
         quiz = self._managed_draft(quiz_id, actor)
         self._require_no_history(quiz_id)
@@ -217,7 +216,7 @@ class QuizService:
         self._session.delete(question)
         self._session.flush()
 
-    # ------------------------------------------------------------- publication
+
     def change_publication(
         self, quiz_id: int, request: QuizPublicationRequest, actor: AuthenticatedUser
     ) -> QuizAuthorResponse:
@@ -245,7 +244,7 @@ class QuizService:
         self._session.flush()
         return quiz_author_response(quiz, questions, options)
 
-    # -------------------------------------------------------------- internals
+
     def _quiz(self, quiz_id: int) -> Quiz:
         quiz = self._session.get(Quiz, quiz_id)
         if quiz is None:
@@ -450,7 +449,7 @@ class QuizService:
                 raise ApiException(ErrorCode.INVALID_QUIZ, exc.message) from exc
 
 
-def _question_author(question: Question, options: list[QuestionOption]):  # noqa: ANN001
+def _question_author(question: Question, options: list[QuestionOption]):
     from app.modules.assessment.api.schemas import OptionAuthor, QuestionAuthor
 
     return QuestionAuthor(

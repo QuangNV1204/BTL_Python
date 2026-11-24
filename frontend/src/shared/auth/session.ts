@@ -24,7 +24,6 @@ let refreshPromise: Promise<void> | null = null
 let restorePromise: Promise<void> | null = null
 let logoutPromise: Promise<void> | null = null
 let logoutGeneration: number | null = null
-// Cookie-changing operations must finish in order, even if their UI result is stale.
 let cookieQueue: Promise<unknown> = Promise.resolve()
 const listeners = new Set<() => void>()
 
@@ -162,7 +161,6 @@ export async function logoutAll(): Promise<void> {
   const generation = getSessionGeneration()
   await queueCookieOperation(async () => {
     requireSessionGeneration(generation)
-    // Do not refresh inside this queue: refresh uses the same queue and would deadlock.
     await apiPost<void>('/auth/logout-all', undefined, { retryAuth: false })
     requireSessionGeneration(generation)
     clearSession()

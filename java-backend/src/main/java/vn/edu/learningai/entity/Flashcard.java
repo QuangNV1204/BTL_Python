@@ -9,7 +9,6 @@ import vn.edu.learningai.common.enums.FlashcardStatus;
 
 import java.time.Instant;
 
-/** Flashcard của một bài học (bảng flashcards). Vòng đời DRAFT → PUBLISHED → CLOSED. */
 @Entity
 @Getter
 @Setter

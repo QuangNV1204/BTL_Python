@@ -1,4 +1,3 @@
-"""Router lesson/documents — khớp LessonController.java."""
 
 from __future__ import annotations
 
@@ -47,7 +46,7 @@ LessonServiceDep = Annotated[LessonService, Depends(lesson_service)]
 async def read_upload(file: UploadFile) -> UploadedDocument:
     content = await file.read()
     if len(content) > MAX_UPLOAD_BYTES:
-        # Giới hạn servlet 10MB của Java áp cho mọi route upload.
+
         raise ApiException(ErrorCode.FILE_TOO_LARGE, "Maximum upload size exceeded")
     return UploadedDocument(
         filename=file.filename,
@@ -154,8 +153,7 @@ def download_document(
     document = service.download_document(document_id, principal_of(request).user_id)
     from urllib.parse import quote
 
-    # Giống ContentDisposition.attachment().filename(name, UTF_8): có cả bản ASCII
-    # thay thế và filename* theo RFC 5987.
+
     ascii_name = document.original_name.encode("ascii", "replace").decode("ascii")
     ascii_name = ascii_name.replace('"', "'")
     disposition = (

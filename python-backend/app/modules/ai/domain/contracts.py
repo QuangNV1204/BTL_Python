@@ -1,7 +1,3 @@
-"""Contract của output AI (contracts/ai-output.md) và cổng AIClient.
-
-Không phụ thuộc FastAPI/SQLAlchemy: đây là rule thuần của module ai.
-"""
 
 from __future__ import annotations
 
@@ -57,7 +53,6 @@ class AiFailureReason(str, Enum):
 
 
 class AIClientException(Exception):
-    """Lỗi khi gọi hệ thống AI; service đổi sang AI_TIMEOUT/PROVIDER_ERROR/INVALID_OUTPUT."""
 
     def __init__(self, reason: AiFailureReason, message: str) -> None:
         super().__init__(message)
@@ -65,13 +60,12 @@ class AIClientException(Exception):
 
 
 class AIClient:
-    """Cổng gọi AI. Nghiệp vụ chỉ phụ thuộc interface này."""
 
-    def generate(self, prompt: str) -> str:  # pragma: no cover - interface
+    def generate(self, prompt: str) -> str:
         raise NotImplementedError
 
-    def provider(self) -> str:  # pragma: no cover - interface
+    def provider(self) -> str:
         raise NotImplementedError
 
-    def model(self) -> str:  # pragma: no cover - interface
+    def model(self) -> str:
         raise NotImplementedError

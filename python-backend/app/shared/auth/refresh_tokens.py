@@ -1,8 +1,3 @@
-"""Refresh session và cookie, tương ứng RefreshTokenService/CookieService của Java.
-
-Token ngẫu nhiên 32 byte Base64URL không padding (43 ký tự) — trùng định dạng mà
-DTO verify/reset yêu cầu ``[A-Za-z0-9_-]{43}``. DB chỉ lưu SHA-256 hex của token.
-"""
 
 from __future__ import annotations
 

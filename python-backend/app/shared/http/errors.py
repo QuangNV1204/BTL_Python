@@ -1,9 +1,3 @@
-"""Đăng ký exception handler trả đúng ErrorResponse của java-backend.
-
-Java trả ``{"code","message","details"?,"request_id"?}`` với 4xx do validation là
-VALIDATION_ERROR/400 (không phải 422 mặc định của FastAPI) — theo
-docs/05-delivery/python-migration.md mục 4.
-"""
 
 from __future__ import annotations
 
@@ -49,7 +43,6 @@ _ERROR_CODE_BY_NAME = {item.value: item for item in ErrorCode}
 
 
 def api_error_response(exc: ApiException) -> JSONResponse:
-    """Giống handler ApiException nhưng dùng được từ middleware (ngoài app handler)."""
     details = [item.to_json() for item in exc.details] if exc.details else None
     return _response(exc.code, exc.message, details)
 
@@ -86,7 +79,7 @@ def install_error_handlers(app: FastAPI) -> None:
         if exc.status_code == 413:
             return _response(ErrorCode.FILE_TOO_LARGE)
         if exc.status_code == 405:
-            # Route không có method này thực chất là "không được phép" như denyAll của Java.
+
             return _response(ErrorCode.FORBIDDEN)
         if 400 <= exc.status_code < 500:
             return _response(

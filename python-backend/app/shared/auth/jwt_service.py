@@ -1,13 +1,3 @@
-"""Phát và xác minh access token, tương thích JwtService.java.
-
-Token HS256 với:
-- ``sub`` = email người dùng
-- ``role`` = danh sách authority dạng ``ROLE_<ROLE>``
-- ``iat`` / ``exp`` tính bằng giây (jjwt ghi NumericDate)
-
-``JWT_SIGNING_KEY`` là Base64 như Java (``Base64.getDecoder().decode``).
-bcrypt: hash ``$2a$10$...`` của Spring dùng được trực tiếp với thư viện bcrypt.
-"""
 
 from __future__ import annotations
 
@@ -39,7 +29,6 @@ class JwtService:
         return jwt.encode(payload, self._key, algorithm=self.ALGORITHM)
 
     def extract_username(self, token: str) -> str | None:
-        """Trả subject; token sai/hết hạn thì ném jwt.PyJWTError như Java coi là lỗi."""
         payload = jwt.decode(token, self._key, algorithms=[self.ALGORITHM])
         subject = payload.get("sub")
         return subject if isinstance(subject, str) else None

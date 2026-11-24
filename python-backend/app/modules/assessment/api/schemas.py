@@ -1,9 +1,3 @@
-"""Schema quiz — giữ đúng validate nghiêm ngặt của DTO Java.
-
-Các body quiz được Java parse thủ công để từ chối field lạ/dấu sai kiểu với thông
-điệp riêng. Ở đây dùng ``model_validator(mode="before")`` trên dict thô để giữ
-cùng thông điệp và cùng quy tắc.
-"""
 
 from __future__ import annotations
 
@@ -79,7 +73,6 @@ def normalize_option_text(value: str) -> str:
     return _WHITESPACE.sub(" ", unicodedata.normalize("NFC", value)).strip().lower()
 
 
-# ---------------------------------------------------------------------- options
 class OptionWrite(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
@@ -100,7 +93,6 @@ def _parse_option(value: Any) -> OptionWrite:
     )
 
 
-# --------------------------------------------------------------------- question
 class WriteQuestionRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
@@ -116,7 +108,6 @@ class WriteQuestionRequest(BaseModel):
         return value
 
     def validate_rules(self) -> None:
-        """Sao WriteQuestionRequest.validate(): nội dung và đúng một đáp án đúng."""
         if (
             not _valid_text(self.content, 4000)
             or (self.explanation is not None and _code_points(self.explanation) > 4000)
@@ -186,7 +177,6 @@ class WriteQuestionRequest(BaseModel):
         return request
 
 
-# ------------------------------------------------------------------------- quiz
 class CreateQuizRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
@@ -311,7 +301,7 @@ class SaveQuizDraftRequest(BaseModel):
             positions.add(write.order_index)
             items.append(SaveDraftItem(id=question_id, question=write))
 
-        # Thứ tự mảng là thứ tự hiển thị cuối cùng; không cho vị trí mơ hồ.
+
         for index, item in enumerate(items):
             if item.question.order_index != index:
                 raise _invalid("Question order_index must match array position")
@@ -319,7 +309,6 @@ class SaveQuizDraftRequest(BaseModel):
         return cls(request_id=key.lower(), title=title, questions=items)
 
 
-# -------------------------------------------------------------------- response
 class OptionAuthor(BaseModel):
     id: str
     content: str
@@ -374,7 +363,7 @@ class QuizSummaryResponse(BaseModel):
     question_count: int
 
 
-def quiz_author_response(quiz, questions, options_by_question) -> QuizAuthorResponse:  # noqa: ANN001
+def quiz_author_response(quiz, questions, options_by_question) -> QuizAuthorResponse:
     ordered = sorted(questions, key=lambda item: item.order_index)
     return QuizAuthorResponse(
         id=str(quiz.id),
@@ -407,7 +396,7 @@ def quiz_author_response(quiz, questions, options_by_question) -> QuizAuthorResp
     )
 
 
-def quiz_student_response(quiz, questions, options_by_question) -> QuizStudentResponse:  # noqa: ANN001
+def quiz_student_response(quiz, questions, options_by_question) -> QuizStudentResponse:
     ordered = sorted(questions, key=lambda item: item.order_index)
     return QuizStudentResponse(
         id=str(quiz.id),

@@ -1,4 +1,3 @@
-"""Chọn cài đặt AIClient theo AI_PROVIDER, tương ứng AiConfig.java."""
 
 from __future__ import annotations
 

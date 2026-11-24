@@ -22,7 +22,6 @@ import vn.edu.learningai.service.FlashcardService;
 
 import java.net.URI;
 
-/** CARD-01: flashcard của bài học. */
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/api/v1")

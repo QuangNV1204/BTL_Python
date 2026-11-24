@@ -83,7 +83,6 @@ class DocumentDeletionMySqlIntegrationTest {
     @Test void abandonedUploadRecoversWithoutRollbackCallback() throws Exception {
         var file = new MockMultipartFile("file", "orphan.txt", "text/plain", "orphan".getBytes());
         String key = storage.newKey(file);
-        // Simulate durable intent + abandoned connection, with NO Spring completion callback.
         jdbc.sql("INSERT INTO document_cleanup_jobs(storage_key,job_type) VALUES(:key,'STAGING')").param("key",key).update();
         storage.store(key,file);
         assertThat(root.resolve(key)).exists();
@@ -92,7 +91,6 @@ class DocumentDeletionMySqlIntegrationTest {
         assertThat(root.resolve(key)).doesNotExist();
         assertThat(jdbc.sql("SELECT COUNT(*) FROM document_cleanup_jobs WHERE storage_key=:key")
             .param("key",key).query(Long.class).single()).isEqualTo(1);
-        // DB transaction lost: delayed uploader resumes AFTER the first recovery sweep.
         storage.store(key,file);
         restarted.retryPending();
         assertThat(root.resolve(key)).doesNotExist();

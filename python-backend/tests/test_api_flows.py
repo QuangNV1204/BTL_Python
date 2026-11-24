@@ -1,7 +1,3 @@
-"""Kiểm thử luồng HTTP chính, đối chiếu hành vi java-backend.
-
-TestClient chạy app FastAPI thật với SQLite tạm (xem conftest.py).
-"""
 
 from __future__ import annotations
 
@@ -19,7 +15,6 @@ def _set_password(session, user: User, password: str) -> None:
     session.commit()
 
 
-# ------------------------------------------------------------------ auth/errors
 def test_login_with_wrong_password_returns_unauthenticated(client):
     from app.shared.database.session import SessionLocal
     from tests.conftest import make_user
@@ -103,7 +98,6 @@ def test_inactive_account_returns_403_even_with_valid_token(client):
     assert response.json()["code"] == "ACCOUNT_INACTIVE"
 
 
-# ---------------------------------------------------------------------- catalog
 def test_admin_can_create_category_and_student_cannot(client):
     from app.shared.database.session import SessionLocal
     from tests.conftest import auth, login, make_user
@@ -143,7 +137,6 @@ def test_admin_can_create_category_and_student_cannot(client):
     assert public.json()["page_size"] == 10
 
 
-# ---------------------------------------------------------------- course/lesson
 def test_course_publication_requires_thumbnail_and_lesson(client):
     from app.shared.database.session import SessionLocal
     from tests.conftest import auth, login, make_category, make_user
@@ -280,9 +273,7 @@ def test_student_cannot_see_transcript_until_enrolled(client):
     assert visible.json()["can_delete"] is True
 
 
-# ------------------------------------------------------------------- quiz/attempt
 def _quiz_fixture(client):
-    """Teacher + course + lesson + published quiz with 2 questions."""
     from app.shared.database.session import SessionLocal
     from tests.conftest import (
         auth,
@@ -363,7 +354,7 @@ def test_student_quiz_flow_has_no_answer_leak(client):
     attempt_id = started.json()["id"]
     assert started.headers["Location"] == f"/api/v1/attempts/{attempt_id}"
 
-    # Retry trả attempt đang mở với 200 thay vì tạo mới.
+
     again = client.post(f"/api/v1/quizzes/{ctx['quiz_id']}/attempts", headers=auth(token))
     assert again.status_code == 200
     assert again.json()["id"] == attempt_id
@@ -378,7 +369,7 @@ def test_student_quiz_flow_has_no_answer_leak(client):
         },
         headers=auth(token),
     )
-    # question_id không thuộc quiz này → INVALID_ANSWER (không chấm điểm).
+
     assert submitted.status_code == 400
     assert submitted.json()["code"] == "INVALID_ANSWER"
 

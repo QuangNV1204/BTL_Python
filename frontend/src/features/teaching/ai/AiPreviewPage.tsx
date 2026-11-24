@@ -23,7 +23,6 @@ export function AiPreviewPage() {
   const [draft, setDraft] = useState<AiDraft | null>(() => readDraft(lessonId))
   const [saveError, setSaveError] = useState<string>()
   const [saveFields, setSaveFields] = useState<Record<string, string>>({})
-  // Cho phép điều hướng sau khi đã lưu hoặc xác nhận bỏ bản nháp.
   const allowExit = useRef(false)
   const blocker = useBlocker(({ currentLocation, nextLocation }) =>
     !!draft && !allowExit.current && currentLocation.pathname !== nextLocation.pathname,

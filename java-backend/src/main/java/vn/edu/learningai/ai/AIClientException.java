@@ -2,7 +2,6 @@ package vn.edu.learningai.ai;
 
 import lombok.Getter;
 
-/** Lỗi khi gọi Hệ thống AI; service đổi sang AI_TIMEOUT / AI_PROVIDER_ERROR / AI_OUTPUT_INVALID. */
 @Getter
 public class AIClientException extends RuntimeException {
 

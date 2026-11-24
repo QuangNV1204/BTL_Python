@@ -1,4 +1,3 @@
-"""Schema flashcard — CardWriteRequest/CardUpdateRequest/StatusRequest của Java."""
 
 from __future__ import annotations
 
@@ -38,7 +37,7 @@ class CardUpdateRequest(_Request):
     @field_validator("front_text", "back_text")
     @classmethod
     def _not_blank(cls, value: str | None) -> str | None:
-        # @Pattern("(?s).*\\S.*"): field gửi lên không được rỗng.
+
         if value is not None and not value.strip():
             raise ValueError("must not be blank")
         return value
@@ -58,7 +57,7 @@ class CardResponse(BaseModel):
     created_at: Instant
 
 
-def card_response(card) -> CardResponse:  # noqa: ANN001
+def card_response(card) -> CardResponse:
     return CardResponse(
         id=str(card.id),
         lesson_id=str(card.lesson_id),

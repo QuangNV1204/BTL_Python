@@ -1,8 +1,3 @@
-"""Flashcard của bài học — sao FlashcardService.java.
-
-Vòng đời DRAFT → PUBLISHED → CLOSED; chỉ Draft được sửa/xóa, Published bất biến.
-Student đã ghi danh chỉ thấy Published.
-"""
 
 from __future__ import annotations
 

@@ -57,7 +57,6 @@ function parseDateOnly(value?: string | null): { day: string; month: string; yea
   return { day, month, year }
 }
 
-/** Hiển thị timestamp có Z/offset theo giờ Việt Nam (Asia/Ho_Chi_Minh): DD/MM/YYYY HH:mm. */
 export function formatDateTime(value?: IsoDateTime | null): string {
   const dateOnly = parseDateOnly(value)
   if (dateOnly) {
@@ -70,7 +69,6 @@ export function formatDateTime(value?: IsoDateTime | null): string {
   return `${p.day}/${p.month}/${p.year} ${hour}:${p.minute}`
 }
 
-/** Hiển thị ngày theo giờ Việt Nam (Asia/Ho_Chi_Minh) hoặc date-only không lệch ngày: DD/MM/YYYY. */
 export function formatDate(value?: IsoDateTime | null): string {
   const dateOnly = parseDateOnly(value)
   if (dateOnly) {

@@ -1,4 +1,3 @@
-"""Schema của module lesson; request theo LessonWriteRequest.java."""
 
 from __future__ import annotations
 
@@ -66,7 +65,7 @@ class LessonDocumentResponse(BaseModel):
 
 
 class LessonResponse(BaseModel):
-    # LessonResponse.java dùng Long trần (không @JsonSerialize string) nên id là number.
+
     id: int
     course_id: int
     title: str

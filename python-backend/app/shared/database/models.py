@@ -1,13 +1,3 @@
-"""ORM model phản chiếu đúng schema tạo bởi database/migrations.
-
-Không dùng create_all: schema là nguồn SQL chung (docs/05-delivery/python-migration.md).
-Model chỉ ánh xạ, không tạo bảng.
-
-Quy ước giống entity Java:
-- BIGINT id là ``int``; trên wire đổi thành string.
-- Enum lưu dạng VARCHAR/ENUM với giá trị UPPER_CASE.
-- Mọi mốc thời gian là DATETIME(6) naive UTC.
-"""
 
 from __future__ import annotations
 
@@ -109,7 +99,7 @@ class Course(Base):
 class CourseMember(Base):
     __tablename__ = "course_members"
 
-    # V2 thay khóa chính ghép bằng id tự tăng + unique (course_id, student_id).
+
     id: Mapped[int] = mapped_column(BigIntPK, primary_key=True, autoincrement=True)
     course_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("courses.id"), nullable=False)
     student_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("users.id"), nullable=False)
@@ -245,7 +235,7 @@ class QuizAttempt(Base):
     correct_count: Mapped[int | None] = mapped_column(Integer, nullable=True)
     started_at: Mapped[datetime] = mapped_column(UTCDateTime, nullable=False)
     submitted_at: Mapped[datetime | None] = mapped_column(UTCDateTime, nullable=True)
-    # Cột GENERATED của V4 là active_attempt; ORM không ghi, chỉ đọc unique constraint.
+
     version: Mapped[int] = mapped_column(BigInteger, nullable=False, default=0)
 
     __table_args__ = (
@@ -338,13 +328,12 @@ class PasswordResetToken(Base):
 
 
 class DocumentCleanupJob(Base):
-    """V7/V8: hàng đợi xóa/staging file tài liệu (khóa chính là storage_key)."""
 
     __tablename__ = "document_cleanup_jobs"
 
     storage_key: Mapped[str] = mapped_column(String(500), primary_key=True)
     job_type: Mapped[str] = mapped_column(String(16), nullable=False, default="DELETE")
-    # DB tự điền CURRENT_TIMESTAMP(6); model chừa default phía Python cho SQLite test.
+
     created_at: Mapped[datetime] = mapped_column(
         UTCDateTime, nullable=False, server_default=func.now()
     )
@@ -354,7 +343,6 @@ class DocumentCleanupJob(Base):
 
 
 class QuizDraftSaveReceipt(Base):
-    """V9: receipt idempotency cho PUT /quizzes/{id}/draft."""
 
     __tablename__ = "quiz_draft_save_receipts"
 

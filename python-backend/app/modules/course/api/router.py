@@ -1,4 +1,3 @@
-"""Router course/marketplace/thumbnail — khớp CourseController + MarketplaceController."""
 
 from __future__ import annotations
 
@@ -134,12 +133,11 @@ def delete_course(
     return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 
-# ------------------------------------------------------------- marketplace (public)
 @router.get("/courses")
 def search_courses(
     service: Service,
     q: str | None = Query(default=None),
-    # Path param của Java là Long; giá trị không phải số phải thành 400 VALIDATION_ERROR.
+
     category_id: str | None = Query(default=None),
     sort: str | None = Query(default=None),
     page: int = Query(default=1),

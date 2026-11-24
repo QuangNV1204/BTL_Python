@@ -1,9 +1,3 @@
-"""Prompt gửi AI, sao nguyên AiPromptBuilder.java.
-
-Ba dòng đầu (TASK/COUNT/DIFFICULTY) là header cố định: model đọc như yêu cầu và
-MockAIClient đọc để sinh đúng loại/số lượng. Đổi nội dung prompt thì tăng
-*_PROMPT_VERSION (ghi vào ai_generations.prompt_version để tra vết).
-"""
 
 from __future__ import annotations
 
@@ -58,5 +52,4 @@ def build_flashcard_prompt(source_text: str, count: int) -> str:
 
 
 def _sanitize(source_text: str) -> str:
-    """Không để nội dung bài học tự đóng thẻ source (chống prompt injection đơn giản)."""
     return source_text.replace("</source>", "</ source>").replace("<source>", "< source>")

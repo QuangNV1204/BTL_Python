@@ -1,4 +1,3 @@
-"""Router attempt — khớp AttemptController.java."""
 
 from __future__ import annotations
 

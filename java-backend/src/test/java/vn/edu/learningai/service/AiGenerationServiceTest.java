@@ -57,7 +57,6 @@ class AiGenerationServiceTest {
         access = mock(LessonAccessPolicy.class);
         sourceText = mock(LessonSourceTextProvider.class);
         repository = mock(AiGenerationRepository.class);
-        // Spy MockAIClient (class) bằng mock maker kiểu lớp con, vì cấu hình chung là mock-maker-proxy.
         aiClient = mock(MockAIClient.class, withSettings()
             .spiedInstance(new MockAIClient(jsonMapper))
             .defaultAnswer(Answers.CALLS_REAL_METHODS)

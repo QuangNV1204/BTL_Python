@@ -1,4 +1,3 @@
-"""Schema khóa học — CourseOwnerResponse / CoursePublicResponse của Java."""
 
 from __future__ import annotations
 
@@ -99,25 +98,24 @@ class CoursePublicResponse(BaseModel):
     price: PriceStr
     currency: str
     total_students: int
-    # @JsonInclude(NON_NULL) của Java: field null thì không xuất hiện trong JSON.
+
     outline: list[CourseOutlineItem] | None = Field(default=None, exclude_if=lambda v: v is None)
     lesson_count: int | None = Field(default=None, exclude_if=lambda v: v is None)
     archived_at: Instant | None = Field(default=None, exclude_if=lambda v: v is None)
 
 
 def _check_price(value: Decimal) -> Decimal:
-    """@DecimalMin("0.00") + @Digits(integer=12, fraction=2)."""
     if value < Decimal("0"):
         raise ValueError("must be greater than or equal to 0.00")
     exponent = value.as_tuple().exponent
-    if isinstance(exponent, int) and exponent < -2:  # noqa: PLR2004
+    if isinstance(exponent, int) and exponent < -2:
         raise ValueError("numeric value out of bounds (max 2 fraction digits)")
-    if isinstance(exponent, int) and len(value.as_tuple().digits) - max(-exponent, 0) > 12:  # noqa: PLR2004
+    if isinstance(exponent, int) and len(value.as_tuple().digits) - max(-exponent, 0) > 12:
         raise ValueError("numeric value out of bounds (max 12 integer digits)")
     return value
 
 
-def course_owner_response(course, lesson_count: int, total_students: int) -> CourseOwnerResponse:  # noqa: ANN001
+def course_owner_response(course, lesson_count: int, total_students: int) -> CourseOwnerResponse:
     return CourseOwnerResponse(
         id=str(course.id),
         title=course.title,
@@ -138,7 +136,7 @@ def course_owner_response(course, lesson_count: int, total_students: int) -> Cou
 
 
 def course_public_response(
-    course,  # noqa: ANN001
+    course,
     *,
     total_students: int,
     lesson_count: int | None = None,

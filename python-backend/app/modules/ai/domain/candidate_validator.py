@@ -1,10 +1,3 @@
-"""Kiểm tra output AI theo contracts/ai-output.md.
-
-Sao nguyên AiCandidateValidator.java: đúng object/kiểu/field bắt buộc, không
-null/rỗng, đúng số lượng, không trùng sau normalize, đúng giới hạn độ dài và số
-option, đúng một ``is_correct=true``, từ chối field lạ. Không sửa output — sai là
-ném ``InvalidCandidateException``.
-"""
 
 from __future__ import annotations
 
@@ -35,12 +28,10 @@ def _invalid(reason: str) -> InvalidCandidateException:
 
 
 def normalize(value: str) -> str:
-    """NFC, chữ thường, gộp khoảng trắng — dùng để so trùng."""
     return " ".join(unicodedata.normalize("NFC", value).lower().split())
 
 
 def _strip_code_fence(text: str) -> str:
-    """Chấp nhận đúng một khối ```json ... ``` quanh toàn bộ output."""
     if text.startswith("```") and text.endswith("```") and len(text) > 6:
         newline = text.find("\n")
         if newline > 0:
@@ -93,7 +84,6 @@ def _require_text(
 
 
 def check_question(content: str, options: list[OptionCandidate], path: str) -> None:
-    """2–6 option, đúng 1 đáp án đúng, option không trùng."""
     if not content or not content.strip() or len(content) > MAX_QUESTION_LENGTH:
         raise _invalid(f"{path}.content must be 1-{MAX_QUESTION_LENGTH} characters")
     if len(options) < MIN_OPTIONS or len(options) > MAX_OPTIONS:

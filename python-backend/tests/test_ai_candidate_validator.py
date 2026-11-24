@@ -1,4 +1,3 @@
-"""Port test AiCandidateValidatorTest.java."""
 
 from __future__ import annotations
 

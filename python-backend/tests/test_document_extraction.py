@@ -1,4 +1,3 @@
-"""Trích text tài liệu: txt, docx, pdf (thay Apache Tika của java-backend)."""
 
 from __future__ import annotations
 
@@ -16,7 +15,6 @@ from app.shared.storage.documents import (
 
 
 def _build_pdf(text: str) -> bytes:
-    """PDF tối giản có xref hợp lệ để pypdf đọc được nội dung."""
     objects = [
         b"<< /Type /Catalog /Pages 2 0 R >>",
         b"<< /Type /Pages /Kids [3 0 R] /Count 1 >>",

@@ -33,10 +33,6 @@ import java.util.HexFormat;
 import java.util.List;
 import java.util.function.Function;
 
-/**
- * Sinh quiz/flashcard bằng AI (báo cáo 3.3.4, kịch bản 3.4.4). Chỉ trả preview candidate, không tạo quiz/card.
- * Gọi AI ngoài transaction; mỗi lần sinh (thành công hay lỗi) lưu một bản ghi ai_generations để tra vết.
- */
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -82,10 +78,6 @@ public class AiGenerationService {
             new FlashcardCandidate(result.candidate()));
     }
 
-    /**
-     * Kiểm tra generation_id trước khi lưu Draft (gọi từ QuizService/FlashcardService): đúng người tạo,
-     * đúng bài học, đúng loại và SUCCEEDED. Hợp lệ thì service gọi đặt generated_by_ai = true.
-     */
     @Transactional(readOnly = true)
     public AIGeneration validateForSave(Long generationId, Long lessonId, Long teacherId, GenerationType type) {
         AIGeneration generation = aiGenerationRepository.findById(generationId)
@@ -166,7 +158,6 @@ public class AiGenerationService {
         return candidateValidator.parseCardCandidate(json, count);
     }
 
-    /** document_id bắt buộc với DOCUMENT, không được gửi với TRANSCRIPT. */
     private static Long checkSource(GenerationRequest request) {
         if (request.sourceType() == SourceType.DOCUMENT && request.documentId() == null) {
             throw ApiException.fieldError("document_id", "document_id is required when source_type is DOCUMENT");
@@ -183,7 +174,6 @@ public class AiGenerationService {
         aiGenerationRepository.save(generation);
     }
 
-    /** Cắt theo số ký tự, không cắt đôi cặp surrogate (emoji, ký tự ngoài BMP). */
     static String truncate(String text, int limit) {
         int end = limit;
         if (end > 0 && Character.isHighSurrogate(text.charAt(end - 1))) {

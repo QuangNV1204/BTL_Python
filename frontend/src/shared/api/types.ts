@@ -1,15 +1,8 @@
-/**
- * Kiểu dùng chung theo contracts/api-conventions.md.
- * Giữ nguyên tên field snake_case như trên wire; không đổi sang camelCase.
- */
 
-/** Mọi ID BIGINT trên API là string để không mất độ chính xác trong JavaScript. */
 export type Id = string
 
-/** Thời gian ISO 8601 UTC, ví dụ "2026-10-06T02:05:00Z". Đổi sang giờ địa phương khi hiển thị. */
 export type IsoDateTime = string
 
-/** Danh sách phân trang: page bắt đầu từ 1, page_size 1–100. */
 export interface Page<T> {
   items: T[]
   page: number
@@ -23,7 +16,6 @@ export interface PageParams {
   sort?: string
 }
 
-/** Mã lỗi baseline trong api-conventions.md (backend có thể trả thêm mã khác). */
 export type ErrorCode =
   | 'VALIDATION_ERROR'
   | 'UNAUTHENTICATED'
@@ -56,7 +48,6 @@ export interface FieldErrorDetail {
   message: string
 }
 
-/** Body lỗi chuẩn: {code, message, details?, request_id?}. */
 export interface ApiErrorBody {
   code: ErrorCode
   message: string

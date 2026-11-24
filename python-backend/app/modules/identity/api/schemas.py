@@ -1,8 +1,3 @@
-"""Request/response của module identity.
-
-Field name khớp DTO Java. Vì JSON dùng snake_case, model dùng đúng tên snake_case;
-client muốn camelCase cũng được nhờ AliasChoices ở nơi cần (ví dụ full_name).
-"""
 
 from __future__ import annotations
 
@@ -184,9 +179,6 @@ class TeacherDecisionRequest(_Request):
     )
 
 
-# ---- response ----
-
-
 class UserResponse(BaseModel):
     id: str
     full_name: str
@@ -214,7 +206,7 @@ class TeacherRequestResponse(BaseModel):
 _EMAIL = re.compile(r"[^@\s]+@[^@\s]+\.[^@\s]+")
 
 
-def user_response(user) -> UserResponse:  # noqa: ANN001
+def user_response(user) -> UserResponse:
     return UserResponse(
         id=str(user.id),
         full_name=user.full_name,
@@ -225,7 +217,7 @@ def user_response(user) -> UserResponse:  # noqa: ANN001
     )
 
 
-def teacher_request_response(row) -> TeacherRequestResponse:  # noqa: ANN001
+def teacher_request_response(row) -> TeacherRequestResponse:
     return TeacherRequestResponse(
         id=str(row.id),
         user_id=str(row.user_id),
